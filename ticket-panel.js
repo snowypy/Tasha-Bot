@@ -242,6 +242,12 @@ app.get('/tickets/:id', isAuthenticated, async (req, res) => {
     console.log('Fetching details for ticket ID:', req.params.id);
     try {
         const ticket = await TicketThread.getById(req.params.id);
+
+        if (!ticket) {
+            console.error('Ticket not found:', req.params.id);
+            return res.status(404).send('Ticket not found');
+        }
+
         const messages = await TicketThread.getMessages(req.params.id);
         const tags = await TicketTags.getConfiguredTags();
         const ticketTags = await TicketTags.getTagsForTicket(ticket.id);
@@ -365,7 +371,11 @@ app.get('/tickets/:id', isAuthenticated, async (req, res) => {
             </script>
         `;
         res.send(renderTemplate(content, `Ticket #${ticket.id} - Tasha`, req.user));
-    });
+    } catch (error) {
+        console.error('Error fetching ticket details:', error);
+        res.status(500).send('Error fetching ticket details');
+    }
+});
 
 app.post('/tickets/:id/close', isAuthenticated, async (req, res) => {
     console.log('Closing ticket ID:', req.params.id);
