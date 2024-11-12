@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ticket Transcript</title>
+</head>
+<body>
+  <h1>Ticket Transcript: <%= ticket.id %></h1>
+  <ul>
+    <% ticket.messages.forEach(msg => { %>
+      <li><strong><%= msg.author %></strong>: <%= msg.content %> (<%= new Date(msg.timestamp).toLocaleString() %>)</li>
+    <% }) %>
+  </ul>
+</body>
+</html>
