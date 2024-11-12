@@ -34,10 +34,17 @@ db.serialize(() => {
         ON ticket_messages(ticket_id)
     `);
 
-    db.run(`
-        ALTER TABLE tickets 
-        ADD COLUMN thread_id TEXT;
-    `);
+    db.get("PRAGMA table_info(tickets)", (err, rows) => {
+        if (err) {
+            console.error('Error checking table schema:', err);
+            return;
+        }
+        
+        const hasThreadId = rows.some(row => row.name === 'thread_id');
+        if (!hasThreadId) {
+            db.run('ALTER TABLE tickets ADD COLUMN thread_id TEXT');
+        }
+    });
 });
 
 module.exports = db;
