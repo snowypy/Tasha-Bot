@@ -34,16 +34,22 @@ db.serialize(() => {
         ON ticket_messages(ticket_id)
     `);
 
-    db.get("PRAGMA table_info(tickets)", (err, rows) => {
-        if (err) {
-            console.error('Error checking table schema:', err);
-            return;
-        }
-        
-        const hasThreadId = rows.some(row => row.name === 'thread_id');
-        if (!hasThreadId) {
-            db.run('ALTER TABLE tickets ADD COLUMN thread_id TEXT');
-        }
+    new Promise((resolve, reject) => {
+        db.all("PRAGMA table_info(tickets)", (err, rows) => {
+            if (err) {
+                console.error('Error checking table schema:', err);
+                reject(err);
+                return;
+            }
+            
+            const hasThreadId = rows.some(row => row.name === 'thread_id');
+            if (!hasThreadId) {
+                db.run('ALTER TABLE tickets ADD COLUMN thread_id TEXT');
+            }
+            resolve();
+        });
+    }).catch(err => {
+        console.error('Failed to add thread_id column:', err);
     });
 });
 
