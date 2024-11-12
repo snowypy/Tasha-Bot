@@ -458,3 +458,21 @@ app.post('/tickets/:id/reply', isAuthenticated, async (req, res) => {
         res.status(500).json({ error: 'Failed to send reply' });
     }
 });
+
+app.post('/tickets/:id/tags', isAuthenticated, async (req, res) => {
+    console.log('Updating tags for ticket ID:', req.params.id, 'Tag:', req.body.tag);
+    try {
+        const { tag } = req.body;
+        const ticketId = req.params.id;
+        await TicketTags.addTags(ticketId, [tag]);
+        console.log('Tag added to ticket:', ticketId, 'Tag:', tag);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error updating tags:', error);
+        res.status(500).json({ error: 'Failed to update tags' });
+    }
+});
+
+app.listen(3000, () => {
+    console.log('Ticket panel server started on port 3000');
+});
