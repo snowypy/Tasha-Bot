@@ -3,7 +3,7 @@ const express = require('express');
 const session = require('express-session');
 const passport = require('passport');
 const path = require('path');
-const { Client, GatewayIntentBits, ActionRowBuilder, StringSelectMenuBuilder, InteractionType } = require('discord.js');
+const { Client, GatewayIntentBits } = require('discord.js');
 const config = require('./config.js');
 const { TicketThread } = require('./ticket-thread.js');
 const { TicketTags } = require('./ticket-tags.js');
@@ -14,6 +14,8 @@ const app = express();
 
 // Determine if the app is running in production
 const isProduction = process.env.NODE_ENV === 'production';
+
+console.log('Environment:', isProduction ? 'Production' : 'Development');
 
 // Trust the first proxy if behind one (e.g., Heroku, Nginx)
 if (isProduction) {
@@ -363,11 +365,7 @@ app.get('/tickets/:id', isAuthenticated, async (req, res) => {
             </script>
         `;
         res.send(renderTemplate(content, `Ticket #${ticket.id} - Tasha`, req.user));
-    } catch (error) {
-        console.error('Error loading ticket details:', error);
-        res.status(500).send('Error loading ticket details');
-    }
-});
+    });
 
 app.post('/tickets/:id/close', isAuthenticated, async (req, res) => {
     console.log('Closing ticket ID:', req.params.id);
