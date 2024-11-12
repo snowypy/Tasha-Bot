@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder } = require('discord.js');
+const { Client, GatewayIntentBits, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, InteractionType } = require('discord.js');
 const { TicketPanel } = require('./ticket-panel.js');
 const { TicketThread } = require('./ticket-thread.js');
 const { TicketTags } = require('./ticket-tags.js');
@@ -32,25 +32,11 @@ client.on('ready', () => {
             components: [row]
         });
 
-        client.on('messageCreate', async (message) => {
-            if (message.channelId === config.ticketChannelId && message.content.toLowerCase() === '!createticket') {
-                const filter = (reaction, user) => {
-                    return user.id === message.author.id;
-                };
-
-                const collector = message.createMessageComponentCollector({ filter, time: 60000 });
-
-                collector.on('collect', async (interaction) => {
-                    if (interaction.customId === 'create-ticket') {
-                        const categoryId = interaction.values[0];
-                        const category = config.ticketCategories.find(c => c.id === categoryId);
-                        await TicketThread.create(interaction.user, category);
-                    }
-                });
-
-                collector.on('end', collected => {
-                    console.log(`Collected ${collected.size} items`);
-                });
+        client.on('interactionCreate', async (interaction) => {
+            if (interaction.type === InteractionType.MessageComponent && interaction.customId === 'create-ticket') {
+                const categoryId = interaction.values[0];
+                const category = config.ticketCategories.find(c => c.id === categoryId);
+                await TicketThread.create(interaction.user, category);
             }
         });
     } else {
