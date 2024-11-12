@@ -1,35 +1,35 @@
-.ticket-card {
-    @apply p-6 rounded-lg shadow-sm transition-all duration-200 flex flex-col items-center text-center bg-discord-dark text-gray-100 hover:bg-discord-darker;
-}
-
-.btn-primary {
-    @apply bg-discord-blurple text-white px-4 py-2 rounded-md hover:bg-opacity-80 transition-colors;
-}
-
-.btn-secondary {
-    @apply bg-discord-dark text-gray-100 px-4 py-2 rounded-md hover:bg-discord-darker transition-colors;
-}
-
-.ticket-details {
-    @apply bg-discord-dark rounded-lg shadow-sm p-6 mb-4;
-}
-
-.message-container {
-    @apply space-y-4 mb-6 h-96 overflow-y-auto bg-discord-darker p-4 rounded-lg;
-}
 
 .message-bubble {
-    @apply max-w-[70%] rounded-lg p-3;
+    @apply max-w-[70%] rounded-lg p-3 backdrop-blur-sm transition-all duration-200;
 }
 
 .message-bubble.staff {
-    @apply bg-discord-blurple bg-opacity-20;
+    @apply bg-discord-blurple/20 hover:bg-discord-blurple/30;
 }
 
 .message-bubble.user {
-    @apply bg-discord-dark;
+    @apply bg-discord-dark/80 hover:bg-discord-dark/90;
 }
 
-.input-field {
-    @apply bg-discord-darker border-discord-dark text-gray-100 rounded-md focus:ring-discord-blurple focus:border-discord-blurple;
+.tag-btn {
+    @apply transition-all duration-200;
+}
+
+.tag-btn:hover {
+    @apply opacity-80;
+}
+
+.tag-btn.active {
+    @apply font-medium;
+    filter: brightness(1.2);
+}
+
+.ticket-details {
+    @apply bg-discord-dark/90 backdrop-blur-sm rounded-lg shadow-lg 
+    p-6 mb-4 transition-all duration-200 hover:shadow-xl;
+}
+
+.message-container {
+    @apply space-y-4 mb-6 h-96 overflow-y-auto bg-discord-darker/50 
+    backdrop-blur-sm p-4 rounded-lg scrollbar-thin scrollbar-thumb-discord-dark;
 }

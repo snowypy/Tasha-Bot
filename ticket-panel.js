@@ -159,6 +159,8 @@ app.get('/tickets/:id', async (req, res) => {
     try {
         const ticket = await TicketThread.getById(req.params.id);
         const messages = await TicketThread.getMessages(req.params.id);
+        const tags = await TicketTags.getConfiguredTags();
+        const ticketTags = await TicketTags.getTagsForTicket(ticket.id);
         
         const content = `
         <div class="bg-discord-dark rounded-lg shadow-sm p-6 mb-6">
@@ -171,6 +173,23 @@ app.get('/tickets/:id', async (req, res) => {
                 <span class="px-3 py-1 rounded-full text-sm ${
                     ticket.status === 'open' ? 'bg-discord-green text-black' : 'bg-discord-red text-white'
                 }">${ticket.status}</span>
+            </div>
+        </div>
+
+        <div class="bg-discord-dark rounded-lg shadow-sm p-6 mb-6">
+            <h3 class="text-lg font-medium mb-4">Tags</h3>
+            <div class="flex flex-wrap gap-2 mb-4">
+                ${tags.map(tag => `
+                    <button 
+                        type="button"
+                        data-tag="${tag.name}"
+                        class="tag-btn px-3 py-1 rounded-full text-sm transition-all duration-200 ${
+                            ticketTags.includes(tag.name) ? 'active' : ''
+                        }"
+                        style="background-color: ${tag.color}20; color: ${tag.color}; border: 1px solid ${tag.color}40">
+                        ${tag.name}
+                    </button>
+                `).join('')}
             </div>
         </div>
 
@@ -205,6 +224,26 @@ app.get('/tickets/:id', async (req, res) => {
             const replyForm = document.getElementById('replyForm');
             const messageContainer = document.getElementById('messageContainer');
 
+            // Tag functionality
+            document.querySelectorAll('.tag-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const tag = btn.dataset.tag;
+                    try {
+                        const response = await fetch(\`/tickets/\${ticketId}/tags\`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ tag })
+                        });
+                        if (response.ok) {
+                            btn.classList.toggle('active');
+                        }
+                    } catch (error) {
+                        console.error('Error toggling tag:', error);
+                    }
+                });
+            });
+
+            // Existing reply form handler
             if (replyForm) {
                 replyForm.addEventListener('submit', async (e) => {
                     e.preventDefault();
@@ -267,50 +306,38 @@ app.post('/tickets/:id/close', async (req, res) => {
     }
 });
 
+app.post('/tickets/:id/assign', async (req, res) => {
+    const staffId = req.user.id;
+    await TicketThread.assignTicket(req.params.id, staffId);
+    
+    const thread = await getTicketThread(req.params.id);
+    await thread.send({
+        embeds: [{
+            color: 0x57F287,
+            description: `This ticket has been assigned to <@${staffId}>`
+        }]
+    });
+    
+    res.json({ success: true });
+});
+
 app.post('/tickets/:id/reply', async (req, res) => {
-    try {
-        const { message, staffId } = req.body;
-        const ticketId = req.params.id;
-
-        const ticket = await TicketThread.getById(ticketId);
-        if (!ticket || !ticket.thread_id) {
-            throw new Error('Invalid ticket or missing thread ID');
-        }
-
-        await TicketThread.addMessage(ticketId, staffId, 'Staff Member', message, true);
-
-        try {
-            
-            const ticketChannel = await client.channels.fetch(config.ticketChannelId);
-            if (!ticketChannel) {
-                throw new Error('Ticket channel not found');
-            }
-
-            const thread = await ticketChannel.threads.fetch(ticket.thread_id);
-            if (!thread) {
-                throw new Error('Thread not found');
-            }
-
-            await thread.send({
-                embeds: [{
-                    color: 0x5865f2,
-                    author: {
-                        name: 'Staff Response',
-                        icon_url: 'https://cdn.discordapp.com/embed/avatars/0.png'
-                    },
-                    description: message,
-                    timestamp: new Date()
-                }]
-            });
-        } catch (discordError) {
-            console.error('Discord API error:', discordError);
-        }
-
-        res.json({ success: true });
-    } catch (error) {
-        console.error('Error sending reply:', error);
-        res.status(500).json({ error: 'Failed to send reply: ' + error.message });
-    }
+    const staffMember = req.user;
+    const { message, embedData } = req.body;
+    
+    await TicketThread.addMessage(ticketId, staffMember.id, staffMember.username, message, true);
+    
+    const embed = {
+        color: 0x5865f2,
+        author: {
+            name: staffMember.username,
+            icon_url: `https://cdn.discordapp.com/avatars/${staffMember.id}/${staffMember.avatar}.png`
+        },
+        description: message,
+        ...embedData
+    };
+    
+    await thread.send({ embeds: [embed] });
 });
 
 app.listen(3000, () => {
