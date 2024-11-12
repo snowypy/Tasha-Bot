@@ -3,7 +3,7 @@ module.exports = {
     discord: {
         clientId: 'your-client-id',
         clientSecret: 'your-client-secret',
-        callbackURL: 'http://localhost:3000/auth/discord/callback',
+        callbackURL: 'http://172.93.101.158:3000/auth/discord/callback',
         guildId: 'your-guild-id',
         staffRoleIds: ['role-id-1', 'role-id-2']
     },
