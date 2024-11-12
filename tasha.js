@@ -3,6 +3,7 @@ const { TicketPanel } = require('./ticket-panel.js');
 const { TicketThread } = require('./ticket-thread.js');
 const { TicketTags } = require('./ticket-tags.js');
 const config = require('./config.js');
+const db = require('./database.js');
 
 const client = new Client({ intents: [
     GatewayIntentBits.Guilds,
@@ -45,21 +46,17 @@ client.on('ready', () => {
 });
 
 client.on('messageCreate', async (message) => {
-    
     if (message.author.bot) return;
 
     if (message.channel.isThread() && 
         message.channel.parentId === config.ticketChannelId) {
         
-        const threadName = message.channel.name;
-        const categoryName = threadName.split(' - ')[0];
-        
         try {
-            
+            // Get ticket ID directly from thread name or stored mapping
             const ticket = await new Promise((resolve, reject) => {
                 db.get(
-                    'SELECT id FROM tickets WHERE discord_user_id = ? AND category = ?', 
-                    [message.author.id, categoryName],
+                    'SELECT id FROM tickets WHERE discord_user_id = ? ORDER BY created_at DESC LIMIT 1', 
+                    [message.author.id],
                     (err, row) => {
                         if (err) reject(err);
                         else resolve(row);
@@ -68,7 +65,6 @@ client.on('messageCreate', async (message) => {
             });
 
             if (ticket) {
-
                 await TicketThread.addMessage(
                     ticket.id,
                     message.author.id,

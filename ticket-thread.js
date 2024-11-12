@@ -2,7 +2,7 @@ const { TextChannel, ThreadChannel } = require('discord.js');
 const { TicketTags } = require('./ticket-tags.js');
 const config = require('./config.js');
 const sqlite3 = require('sqlite3').verbose();
-const db = new sqlite3.Database('tickets.db');
+const db = require('./database.js');
 
 db.serialize(() => {
     db.run(`
