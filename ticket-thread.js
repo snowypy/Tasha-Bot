@@ -19,6 +19,19 @@ db.serialize(() => {
     `);
 });
 
+db.run(`
+    CREATE TABLE IF NOT EXISTS ticket_messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ticket_id INTEGER,
+        user_id TEXT NOT NULL,
+        username TEXT NOT NULL,
+        content TEXT NOT NULL,
+        timestamp TEXT NOT NULL,
+        is_staff BOOLEAN,
+        FOREIGN KEY(ticket_id) REFERENCES tickets(id)
+    )
+`);
+
 class TicketThread {
     static async create(client, user, category) {
         const ticketChannel = client.channels.cache.get(config.ticketChannelId);
@@ -37,6 +50,38 @@ class TicketThread {
         stmt.finalize();
 
         return thread;
+    }
+
+    static async getMessages(ticketId) {
+        return new Promise((resolve, reject) => {
+            db.all('SELECT * FROM ticket_messages WHERE ticket_id = ? ORDER BY timestamp ASC', 
+                [ticketId], 
+                (err, rows) => {
+                    if (err) reject(err);
+                    else resolve(rows);
+                });
+        });
+    }
+    
+    static async addMessage(ticketId, userId, username, content, isStaff = false) {
+        return new Promise((resolve, reject) => {
+            const stmt = db.prepare(
+                'INSERT INTO ticket_messages (ticket_id, user_id, username, content, timestamp, is_staff) VALUES (?, ?, ?, ?, ?, ?)'
+            );
+            stmt.run(
+                ticketId, 
+                userId, 
+                username, 
+                content, 
+                new Date().toISOString(),
+                isStaff,
+                (err) => {
+                    if (err) reject(err);
+                    else resolve();
+                }
+            );
+            stmt.finalize();
+        });
     }
 
     static async getAll() {

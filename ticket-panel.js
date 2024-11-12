@@ -147,6 +147,129 @@ app.get('/tickets', async (req, res) => {
     }
 });
 
+app.get('/tickets/:id', async (req, res) => {
+    try {
+        const ticket = await TicketThread.getById(req.params.id);
+        const messages = await TicketThread.getMessages(req.params.id);
+        
+        res.send(`
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Ticket #${ticket.id} - Tasha</title>
+                <script src="https://cdn.tailwindcss.com"></script>
+                <link rel="stylesheet" href="/css/style.css">
+            </head>
+            <body class="bg-gray-100">
+                <nav class="bg-indigo-600 shadow-lg">
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div class="flex items-center justify-between h-16">
+                            <div class="flex items-center">
+                                <a href="/" class="text-white text-xl font-semibold">Tasha Ticket System</a>
+                            </div>
+                        </div>
+                    </div>
+                </nav>
+
+                <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+                    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h1 class="text-2xl font-semibold mb-2">Ticket #${ticket.id}</h1>
+                                <p class="text-gray-600">Opened by ${ticket.discord_username}</p>
+                                <p class="text-gray-600">Category: ${ticket.category}</p>
+                            </div>
+                            <span class="px-3 py-1 rounded-full text-sm ${
+                                ticket.status === 'open' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                            }">${ticket.status}</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                        <div class="space-y-4 mb-6 h-96 overflow-y-auto" id="messageContainer">
+                            ${messages.map(msg => `
+                                <div class="flex ${msg.is_staff ? 'justify-end' : 'justify-start'}">
+                                    <div class="max-w-[70%] ${msg.is_staff ? 'bg-indigo-100' : 'bg-gray-100'} rounded-lg p-3">
+                                        <p class="text-sm font-medium">${msg.username}</p>
+                                        <p class="text-gray-700">${msg.content}</p>
+                                        <p class="text-xs text-gray-500 mt-1">${formatDate(msg.timestamp)}</p>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        ${ticket.status === 'open' ? `
+                            <form id="replyForm" class="mt-4">
+                                <div class="flex gap-2">
+                                    <input type="text" 
+                                           id="replyContent" 
+                                           class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                           placeholder="Type your reply...">
+                                    <button type="submit" class="btn-primary">Send Reply</button>
+                                </div>
+                            </form>
+                        ` : ''}
+                    </div>
+                </main>
+
+                <script>
+                    const ticketId = ${ticket.id};
+                    const replyForm = document.getElementById('replyForm');
+                    const messageContainer = document.getElementById('messageContainer');
+
+                    if (replyForm) {
+                        replyForm.addEventListener('submit', async (e) => {
+                            e.preventDefault();
+                            const content = document.getElementById('replyContent').value;
+                            
+                            try {
+                                const response = await fetch(\`/tickets/\${ticketId}/reply\`, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                    },
+                                    body: JSON.stringify({ 
+                                        message: content,
+                                        staffId: 'staff-member-id' // You'll need to implement proper staff authentication
+                                    })
+                                });
+
+                                if (response.ok) {
+                                    location.reload();
+                                }
+                            } catch (error) {
+                                console.error('Error sending reply:', error);
+                            }
+                        });
+                    }
+                </script>
+            </body>
+            </html>
+        `);
+    } catch (error) {
+        res.status(500).send('Error loading ticket details');
+    }
+});
+
+app.post('/tickets/:id/reply', async (req, res) => {
+    try {
+        const { message, staffId } = req.body;
+        const ticketId = req.params.id;
+        
+        // Add message to database
+        await TicketThread.addMessage(ticketId, staffId, 'Staff Member', message, true);
+        
+        const ticket = await TicketThread.getById(ticketId);
+        
+        
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to send reply' });
+    }
+});
+
 app.listen(3000, () => {
     console.log('Ticket panel server started on port 3000');
 });
