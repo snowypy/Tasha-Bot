@@ -1,9 +1,21 @@
 const express = require('express');
 const path = require('path');
+const { Client } = require('discord.js');
+const config = require('./config.js');
 const { TicketThread } = require('./ticket-thread.js');
 const { TicketTags } = require('./ticket-tags.js');
 
 const app = express();
+
+const client = new Client({
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent
+    ]
+});
+
+client.login(config.discordToken);
 
 const renderTemplate = (content, title = 'Tasha Ticket Panel') => `
 <!DOCTYPE html>
@@ -265,16 +277,27 @@ app.post('/tickets/:id/reply', async (req, res) => {
     try {
         const { message, staffId } = req.body;
         const ticketId = req.params.id;
-        
+
+        const ticket = await TicketThread.getById(ticketId);
+        if (!ticket || !ticket.thread_id) {
+            throw new Error('Invalid ticket or missing thread ID');
+        }
+
         // Add message to database
         await TicketThread.addMessage(ticketId, staffId, 'Staff Member', message, true);
-        
-        const ticket = await TicketThread.getById(ticketId);
-        
-        // Send Discord embed
-        const ticketChannel = client.channels.cache.get(config.ticketChannelId);
-        const thread = await ticketChannel.threads.fetch(ticket.thread_id);
-        if (thread) {
+
+        try {
+            // Send Discord embed
+            const ticketChannel = await client.channels.fetch(config.ticketChannelId);
+            if (!ticketChannel) {
+                throw new Error('Ticket channel not found');
+            }
+
+            const thread = await ticketChannel.threads.fetch(ticket.thread_id);
+            if (!thread) {
+                throw new Error('Thread not found');
+            }
+
             await thread.send({
                 embeds: [{
                     color: 0x5865f2,
@@ -286,11 +309,14 @@ app.post('/tickets/:id/reply', async (req, res) => {
                     timestamp: new Date()
                 }]
             });
+        } catch (discordError) {
+            console.error('Discord API error:', discordError);
         }
-        
+
         res.json({ success: true });
     } catch (error) {
-        res.status(500).json({ error: 'Failed to send reply' });
+        console.error('Error sending reply:', error);
+        res.status(500).json({ error: 'Failed to send reply: ' + error.message });
     }
 });
 
