@@ -1,9 +1,9 @@
-   // ticket-panel.js
+// ticket-panel.js
 const express = require('express');
 const session = require('express-session');
 const passport = require('passport');
 const path = require('path');
-const { Client, GatewayIntentBits } = require('discord.js');
+const { Client, GatewayIntentBits, ActionRowBuilder, StringSelectMenuBuilder, InteractionType } = require('discord.js');
 const config = require('./config.js');
 const { TicketThread } = require('./ticket-thread.js');
 const { TicketTags } = require('./ticket-tags.js');
@@ -11,11 +11,13 @@ const { isAuthenticated } = require('./middleware/auth');
 require('./auth');
 
 const app = express();
-const isProduction = process.env.NODE_ENV === 'production';
-console.log('Environment:', isProduction ? 'Production' : 'Development');
 
+// Determine if the app is running in production
+const isProduction = process.env.NODE_ENV === 'production';
+
+// Trust the first proxy if behind one (e.g., Heroku, Nginx)
 if (isProduction) {
-    app.set(' proxy', 1);
+    app.set('trust proxy', 1);
 }
 
 const client = new Client({
@@ -32,45 +34,29 @@ client.login(config.discordToken);
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 app.use(session({
-    secret: 'your-secure-session-secret',
+    secret: 'your-secure-session-secret', // Replace with a strong secret in production
     resave: false,
     saveUninitialized: false,
-    cookie: {
-        secure: false,
-        maxAge: 24 * 60 * 60 * 1000
-    },
-    name: 'tasha_session'
+    cookie: { 
+        secure: isProduction, // Ensures the browser only sends the cookie over HTTPS
+        maxAge: 24 * 60 * 60 * 1000 // 1 day
+    }
 }));
-
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Passport serialization with isStaff determination
+// Passport serialization
 passport.serializeUser((user, done) => {
     console.log('Serializing user:', user);
     done(null, user);
 });
 
-passport.deserializeUser(async (obj, done) => {
+passport.deserializeUser((obj, done) => {
     console.log('Deserializing user:', obj);
-    try {
-        const guild = await client.guilds.fetch(config.guildId);
-        const member = await guild.members.fetch(obj.id);
-        const isStaff = member.roles.cache.has(config.staffRoleId);
-        obj.isStaff = isStaff;
-        console.log(`User ${obj.username} isStaff: ${isStaff}`);
-        done(null, obj);
-    } catch (error) {
-        console.error('Error during deserialization:', error);
-        done(error, null);
-    }
+    done(null, obj);
 });
 
-// Helper Functions
-const formatDate = (date) => {
-    return new Date(date).toLocaleString();
-};
-
+// Render template function
 const renderTemplate = (content, title = 'Tasha Ticket Panel', user = null) => `
 <!DOCTYPE html>
 <html lang="en" class="dark">
@@ -124,17 +110,76 @@ const renderTemplate = (content, title = 'Tasha Ticket Panel', user = null) => `
     <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         ${content}
     </main>
+    <script src="/js/main.js"></script>
 </body>
 </html>
 `;
 
-// Routes
-app.get('/tickets', isAuthenticated, async (req, res) => {
-    try {
-        const { status } = req.query;
-        let tickets;
-        let statusTitle;
+// Format date function
+const formatDate = (dateStr) => {
+    return new Date(dateStr).toLocaleString();
+};
 
+// Auth routes
+app.get('/auth/discord', (req, res, next) => {
+    console.log('Initiating Discord authentication');
+    passport.authenticate('discord')(req, res, next);
+});
+
+app.get('/auth/discord/callback', 
+    passport.authenticate('discord', {
+        failureRedirect: '/auth/discord'
+    }), 
+    (req, res) => {
+        console.log('Authentication successful for user:', req.user);
+        res.redirect('/');
+    }
+);
+
+app.get('/logout', (req, res) => {
+    req.logout((err) => {
+        if (err) { 
+            console.error('Error during logout:', err);
+            return res.status(500).send('Error logging out');
+        }
+        console.log('User logged out:', req.user);
+        res.redirect('/');
+    });
+});
+
+// Protected routes
+app.get('/', isAuthenticated, (req, res) => {
+    console.log('Accessing dashboard for user:', req.user);
+    const content = `
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <a href="/tickets?status=open" class="ticket-card">
+                <h3>Open Tickets</h3>
+                <div class="icon">📬</div>
+            </a>
+            <a href="/tickets?status=closed" class="ticket-card">
+                <h3>Closed Tickets</h3>
+                <div class="icon">📪</div>
+            </a>
+            <a href="/tickets?status=unassigned" class="ticket-card">
+                <h3>Unassigned Tickets</h3>
+                <div class="icon">📥</div>
+            </a>
+            <a href="/tickets?status=mine" class="ticket-card">
+                <h3>Your Tickets</h3>
+                <div class="icon">👤</div>
+            </a>
+        </div>
+    `;
+    res.send(renderTemplate(content, 'Dashboard', req.user));
+});
+
+app.get('/tickets', isAuthenticated, async (req, res) => {
+    console.log('Fetching tickets with status:', req.query.status);
+    const { status } = req.query;
+    let tickets;
+    let statusTitle;
+
+    try {
         if (status === 'open') {
             tickets = await TicketThread.getOpenTickets();
             statusTitle = 'Open Tickets';
@@ -152,51 +197,36 @@ app.get('/tickets', isAuthenticated, async (req, res) => {
             statusTitle = 'All Tickets';
         }
 
-        const ticketTags = await Promise.all(
-            tickets.map(async ticket => ({
-                id: ticket.id,
-                tags: await TicketTags.getTagsForTicket(ticket.id)
-            }))
-        );
+        console.log(`Retrieved ${tickets.length} tickets for status: ${statusTitle}`);
 
         const content = `
             <h1 class="text-2xl font-semibold mb-6">${statusTitle}</h1>
             <div class="grid gap-6">
-                ${tickets.map(ticket => {
-                    const tags = ticketTags.find(t => t.id === ticket.id)?.tags || [];
-                    return `
+                ${tickets.map(ticket => `
                     <div class="bg-discord-dark shadow-sm rounded-lg p-6 hover:shadow-md transition-shadow">
                         <div class="flex justify-between items-start">
                             <div>
                                 <h3 class="text-lg font-medium">${ticket.category} - ${ticket.discord_username}</h3>
                                 <p class="text-gray-400">Opened: ${formatDate(ticket.created_at)}</p>
-                                <div class="flex flex-wrap gap-2 mt-2">
-                                    ${tags.map(tag => {
-                                        const configTag = config.ticketTags.find(t => t.name === tag);
-                                        return `
-                                            <span class="px-2 py-0.5 rounded-full text-xs" 
-                                                  style="background-color: ${configTag?.color || '#666'}20; 
-                                                         color: ${configTag?.color || '#666'}; 
-                                                         border: 1px solid ${configTag?.color || '#666'}40">
-                                                ${tag}
-                                            </span>
-                                        `;
-                                    }).join('')}
-                                </div>
                             </div>
                             <span class="px-3 py-1 rounded-full text-sm ${
                                 ticket.status === 'open' ? 'bg-discord-green text-black' : 'bg-discord-red text-white'
                             }">${ticket.status}</span>
                         </div>
                         <div class="mt-4 flex gap-2">
-                            <button onclick="location.href='/tickets/${ticket.id}'" class="btn-primary">View Details</button>
+                            <button onclick="location.href='/tickets/${ticket.id}'" 
+                                    class="btn-primary">
+                                View Details
+                            </button>
                             ${ticket.status === 'open' ? `
-                                <button onclick="closeTicket(${ticket.id})" class="btn-secondary">Close Ticket</button>
+                                <button onclick="closeTicket(${ticket.id})" 
+                                        class="btn-secondary">
+                                    Close Ticket
+                                </button>
                             ` : ''}
                         </div>
                     </div>
-                    `;
-                }).join('')}
+                `).join('')}
             </div>
         `;
         res.send(renderTemplate(content, `${statusTitle} - Tasha`, req.user));
@@ -210,12 +240,6 @@ app.get('/tickets/:id', isAuthenticated, async (req, res) => {
     console.log('Fetching details for ticket ID:', req.params.id);
     try {
         const ticket = await TicketThread.getById(req.params.id);
-
-        if (!ticket) {
-            console.error('Ticket not found:', req.params.id);
-            return res.status(404).send('Ticket not found');
-        }
-
         const messages = await TicketThread.getMessages(req.params.id);
         const tags = await TicketTags.getConfiguredTags();
         const ticketTags = await TicketTags.getTagsForTicket(ticket.id);
@@ -238,48 +262,33 @@ app.get('/tickets/:id', isAuthenticated, async (req, res) => {
             <div class="bg-discord-dark rounded-lg shadow-sm p-6 mb-6">
                 <h3 class="text-lg font-medium mb-4">Tags</h3>
                 <div class="flex flex-wrap gap-2 mb-4">
-                    ${tags.map(tag => {
-                        const isActive = ticketTags.includes(tag.name);
-                        return `
-                            <button 
-                                type="button"
-                                data-tag="${tag.name}"
-                                class="tag-btn px-3 py-1 rounded-full text-sm transition-all duration-200"
-                                style="background-color: ${isActive ? tag.color : '#666'}20; 
-                                       color: ${isActive ? tag.color : '#666'}; 
-                                       border: 1px solid ${isActive ? tag.color : '#666'}40">
-                                ${tag.name}
-                            </button>
-                        `;
-                    }).join('')}
+                    ${tags.map(tag => `
+                        <button 
+                            type="button"
+                            data-tag="${tag.name}"
+                            class="tag-btn px-3 py-1 rounded-full text-sm transition-all duration-200 ${
+                                ticketTags.includes(tag.name) ? 'active' : ''
+                            }"
+                            style="background-color: ${tag.color}20; color: ${tag.color}; border: 1px solid ${tag.color}40">
+                            ${tag.name}
+                        </button>
+                    `).join('')}
                 </div>
             </div>
+
             <div class="bg-discord-dark rounded-lg shadow-sm p-6 mb-6">
                 <div class="space-y-4 mb-6 h-96 overflow-y-auto" id="messageContainer">
                     ${messages.map(msg => `
                         <div class="flex ${msg.is_staff ? 'justify-end' : 'justify-start'}">
-                            <div class="flex items-start gap-3">
-                                ${!msg.is_staff ? `
-                                    <img src="https://cdn.discordapp.com/avatars/${ticket.discord_user_id}/${msg.avatar || 'default'}.png" 
-                                         class="w-8 h-8 rounded-full" 
-                                         onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'"
-                                    >
-                                ` : ''}
-                                <div class="message-bubble ${msg.is_staff ? 'staff' : 'user'}">
-                                    <p class="text-sm font-medium">${msg.username}</p>
-                                    <p class="text-gray-300">${msg.content}</p>
-                                    <p class="text-xs text-gray-500 mt-1">${formatDate(msg.timestamp)}</p>
-                                </div>
-                                ${msg.is_staff ? `
-                                    <img src="https://cdn.discordapp.com/avatars/${msg.user_id}/${msg.avatar || 'default'}.png"
-                                         class="w-8 h-8 rounded-full"
-                                         onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'"
-                                    >
-                                ` : ''}
+                            <div class="max-w-[70%] ${msg.is_staff ? 'bg-discord-blurple bg-opacity-20' : 'bg-discord-darker'} rounded-lg p-3">
+                                <p class="text-sm font-medium">${msg.username}</p>
+                                <p class="text-gray-300">${msg.content}</p>
+                                <p class="text-xs text-gray-500 mt-1">${formatDate(msg.timestamp)}</p>
                             </div>
                         </div>
                     `).join('')}
                 </div>
+
                 ${ticket.status === 'open' ? `
                     <form id="replyForm" class="mt-4">
                         <div class="flex gap-2">
@@ -292,6 +301,7 @@ app.get('/tickets/:id', isAuthenticated, async (req, res) => {
                     </form>
                 ` : ''}
             </div>
+
             <script>
                 const ticketId = ${ticket.id};
                 const replyForm = document.getElementById('replyForm');
@@ -311,9 +321,6 @@ app.get('/tickets/:id', isAuthenticated, async (req, res) => {
                             if (response.ok) {
                                 console.log('Tag toggled:', tag);
                                 btn.classList.toggle('active');
-                                btn.style.backgroundColor = btn.classList.contains('active') ? '${tag.color}20' : '#66620';
-                                btn.style.color = btn.classList.contains('active') ? '${tag.color}' : '#666';
-                                btn.style.borderColor = btn.classList.contains('active') ? '${tag.color}40' : '#66640';
                             } else {
                                 console.error('Failed to toggle tag:', tag);
                             }
@@ -357,8 +364,8 @@ app.get('/tickets/:id', isAuthenticated, async (req, res) => {
         `;
         res.send(renderTemplate(content, `Ticket #${ticket.id} - Tasha`, req.user));
     } catch (error) {
-        console.error('Error fetching ticket details:', error);
-        res.status(500).send('Error fetching ticket details');
+        console.error('Error loading ticket details:', error);
+        res.status(500).send('Error loading ticket details');
     }
 });
 
@@ -441,12 +448,8 @@ app.post('/tickets/:id/reply', isAuthenticated, async (req, res) => {
                     name: staffMember.username,
                     icon_url: `https://cdn.discordapp.com/avatars/${staffMember.id}/${staffMember.avatar}.png`
                 },
-                thumbnail: {
-                    url: `https://cdn.discordapp.com/avatars/${staffMember.id}/${staffMember.avatar}.png`
-                },
                 description: message,
-                ...embedData,
-                timestamp: new Date()
+                ...embedData
             };
             await thread.send({ embeds: [embed] });
             console.log('Reply embed sent to Discord thread for ticket:', req.params.id);
