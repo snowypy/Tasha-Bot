@@ -1,4 +1,6 @@
 const express = require('express');
+const session = require('express-session');
+const passport = require('passport');
 const path = require('path');
 const { Client, GatewayIntentBits } = require('discord.js');
 const config = require('./config.js');
