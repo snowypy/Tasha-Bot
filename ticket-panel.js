@@ -12,6 +12,14 @@ require('./auth');
 
 const app = express();
 
+// Determine if the app is running in production
+const isProduction = process.env.NODE_ENV === 'production';
+
+// Trust the first proxy if behind one (e.g., Heroku, Nginx)
+if (isProduction) {
+    app.set('trust proxy', 1);
+}
+
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -23,16 +31,28 @@ const client = new Client({
 client.login(config.discordToken);
 
 // Middleware setup
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 app.use(session({
-    secret: 'your-session-secret',
+    secret: 'your-secure-session-secret', // Replace with a strong secret in production
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: process.env.NODE_ENV === 'production' }
+    cookie: { 
+        secure: !isProduction, // Ensures the browser only sends the cookie over HTTPS
+        maxAge: 24 * 60 * 60 * 1000 // 1 day
+    }
 }));
 app.use(passport.initialize());
 app.use(passport.session());
+
+// Passport serialization
+passport.serializeUser((user, done) => {
+    done(null, user);
+});
+
+passport.deserializeUser((obj, done) => {
+    done(null, obj);
+});
 
 // Render template function
 const renderTemplate = (content, title = 'Tasha Ticket Panel', user = null) => `
@@ -109,7 +129,13 @@ app.get('/auth/discord/callback',
 );
 
 app.get('/logout', (req, res) => {
-    req.logout(() => res.redirect('/'));
+    req.logout((err) => {
+        if (err) { 
+            console.error('Error during logout:', err);
+            return res.status(500).send('Error logging out');
+        }
+        res.redirect('/');
+    });
 });
 
 // Protected routes
@@ -192,6 +218,7 @@ app.get('/tickets', isAuthenticated, async (req, res) => {
         `;
         res.send(renderTemplate(content, `${statusTitle} - Tasha`, req.user));
     } catch (error) {
+        console.error('Error loading tickets:', error);
         res.status(500).send('Error loading tickets');
     }
 });
@@ -313,6 +340,7 @@ app.get('/tickets/:id', isAuthenticated, async (req, res) => {
         `;
         res.send(renderTemplate(content, `Ticket #${ticket.id} - Tasha`, req.user));
     } catch (error) {
+        console.error('Error loading ticket details:', error);
         res.status(500).send('Error loading ticket details');
     }
 });
@@ -353,7 +381,8 @@ app.post('/tickets/:id/assign', isAuthenticated, async (req, res) => {
         const staffId = req.user.id;
         await TicketThread.assignTicket(req.params.id, staffId);
         
-        const thread = await TicketThread.getThread(req.params.id);
+        const ticket = await TicketThread.getById(req.params.id);
+        const thread = await client.channels.cache.get(config.ticketChannelId).threads.fetch(ticket.thread_id);
         if (thread) {
             await thread.send({
                 embeds: [{
@@ -377,7 +406,8 @@ app.post('/tickets/:id/reply', isAuthenticated, async (req, res) => {
 
         await TicketThread.addMessage(req.params.id, staffMember.id, staffMember.username, message, true);
         
-        const thread = await TicketThread.getThread(req.params.id);
+        const ticket = await TicketThread.getById(req.params.id);
+        const thread = await client.channels.cache.get(config.ticketChannelId).threads.fetch(ticket.thread_id);
         if (thread) {
             const embed = {
                 color: 0x5865f2,
