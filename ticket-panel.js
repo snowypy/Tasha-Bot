@@ -40,23 +40,41 @@ app.use(session({
     resave: false,
     saveUninitialized: false,
     cookie: { 
-        secure: isProduction, // Ensures the browser only sends the cookie over HTTPS
+        secure: isProduction,       // 'true' for HTTPS, 'false' for HTTP
+        httpOnly: true,             // Prevents client-side JavaScript from accessing the cookie
+        sameSite: 'lax',            // Helps protect against CSRF attacks
         maxAge: 24 * 60 * 60 * 1000 // 1 day
     }
 }));
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Passport serialization
+// Passport serialization with isStaff determination
 passport.serializeUser((user, done) => {
     console.log('Serializing user:', user);
     done(null, user);
 });
 
-passport.deserializeUser((obj, done) => {
+passport.deserializeUser(async (obj, done) => {
     console.log('Deserializing user:', obj);
-    done(null, obj);
+    try {
+        // Fetch the guild
+        const guild = await client.guilds.fetch(config.guildId);
+        // Fetch the member from the guild
+        const member = await guild.members.fetch(obj.id);
+        // Check if the member has the staff role
+        const isStaff = member.roles.cache.has(config.staffRoleId);
+        obj.isStaff = isStaff;
+        console.log(`User ${obj.username} isStaff: ${isStaff}`);
+        done(null, obj);
+    } catch (error) {
+        console.error('Error during deserialization:', error);
+        done(error, null);
+    }
 });
+
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Render template function
 const renderTemplate = (content, title = 'Tasha Ticket Panel', user = null) => `
