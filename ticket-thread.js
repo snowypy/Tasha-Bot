@@ -32,6 +32,11 @@ db.run(`
     )
 `);
 
+db.run(`
+    CREATE INDEX IF NOT EXISTS idx_ticket_messages_ticket_id 
+    ON ticket_messages(ticket_id)
+`);
+
 class TicketThread {
     static async create(client, user, category) {
         const ticketChannel = client.channels.cache.get(config.ticketChannelId);
@@ -54,12 +59,21 @@ class TicketThread {
 
     static async getMessages(ticketId) {
         return new Promise((resolve, reject) => {
-            db.all('SELECT * FROM ticket_messages WHERE ticket_id = ? ORDER BY timestamp ASC', 
+            db.all(
+                `SELECT 
+                    tm.*,
+                    t.discord_user_id,
+                    t.discord_username
+                FROM ticket_messages tm
+                JOIN tickets t ON t.id = tm.ticket_id
+                WHERE tm.ticket_id = ? 
+                ORDER BY tm.timestamp ASC`, 
                 [ticketId], 
                 (err, rows) => {
                     if (err) reject(err);
                     else resolve(rows);
-                });
+                }
+            );
         });
     }
     

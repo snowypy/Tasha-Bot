@@ -44,4 +44,43 @@ client.on('ready', () => {
     }
 });
 
+client.on('messageCreate', async (message) => {
+    
+    if (message.author.bot) return;
+
+    if (message.channel.isThread() && 
+        message.channel.parentId === config.ticketChannelId) {
+        
+        const threadName = message.channel.name;
+        const categoryName = threadName.split(' - ')[0];
+        
+        try {
+            
+            const ticket = await new Promise((resolve, reject) => {
+                db.get(
+                    'SELECT id FROM tickets WHERE discord_user_id = ? AND category = ?', 
+                    [message.author.id, categoryName],
+                    (err, row) => {
+                        if (err) reject(err);
+                        else resolve(row);
+                    }
+                );
+            });
+
+            if (ticket) {
+
+                await TicketThread.addMessage(
+                    ticket.id,
+                    message.author.id,
+                    message.author.username,
+                    message.content,
+                    false
+                );
+            }
+        } catch (error) {
+            console.error('Error storing Discord message:', error);
+        }
+    }
+});
+
 client.login(config.discordToken);
