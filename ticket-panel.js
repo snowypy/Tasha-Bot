@@ -36,15 +36,14 @@ client.login(config.discordToken);
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 app.use(session({
-    secret: 'your-secure-session-secret', // Replace with a strong secret in production
-    resave: false,
+    secret: 'your-secure-session-secret',
+    resave: false, 
     saveUninitialized: false,
-    cookie: { 
-        secure: isProduction,       // 'true' for HTTPS, 'false' for HTTP
-        httpOnly: true,             // Prevents client-side JavaScript from accessing the cookie
-        sameSite: 'lax',            // Helps protect against CSRF attacks
-        maxAge: 24 * 60 * 60 * 1000 // 1 day
-    }
+    cookie: {
+        secure: false, // Set to false for HTTP
+        maxAge: 24 * 60 * 60 * 1000
+    },
+    name: 'tasha_session'
 }));
 app.use(passport.initialize());
 app.use(passport.session());

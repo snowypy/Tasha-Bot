@@ -1,9 +1,9 @@
-// middleware/auth.js
 const isAuthenticated = (req, res, next) => {
-    console.log('Authentication check for request. User authenticated:', req.isAuthenticated());
-    if (req.isAuthenticated()) {
+    if (req.isAuthenticated() && req.user.isStaff) {
         return next();
     }
+    // Clear any existing session
+    req.session.destroy();
     res.redirect('/auth/discord');
 };
 

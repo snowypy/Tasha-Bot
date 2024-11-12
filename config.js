@@ -5,7 +5,7 @@ module.exports = {
         clientSecret: 'your-client-secret',
         callbackURL: 'http://172.93.101.158:3000/auth/discord/callback',
         guildId: 'your-guild-id',
-        staffRoleIds: ['role-id-1', 'role-id-2']
+        staffRoleId: 'your-staff-role-id'
     },
     ticketChannelId: 'discord-channel-id-for-tickets',
     ticketCategories: [
