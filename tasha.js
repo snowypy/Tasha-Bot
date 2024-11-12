@@ -14,7 +14,6 @@ const client = new Client({ intents: [
 client.on('ready', () => {
     console.log(`Logged in as ${client.user.tag}!`);
 
-    // Set up ticket channel and attach event listeners
     const ticketChannel = client.channels.cache.get(config.ticketChannelId);
     if (ticketChannel && ticketChannel.isTextBased()) {
         const row = new ActionRowBuilder()
@@ -52,7 +51,7 @@ client.on('messageCreate', async (message) => {
         message.channel.parentId === config.ticketChannelId) {
         
         try {
-            // Get ticket ID directly from thread name or stored mapping
+            
             const ticket = await new Promise((resolve, reject) => {
                 db.get(
                     'SELECT id FROM tickets WHERE discord_user_id = ? ORDER BY created_at DESC LIMIT 1', 

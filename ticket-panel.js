@@ -65,11 +65,9 @@ const renderTemplate = (content, title = 'Tasha Ticket Panel') => `
 </html>
 `;
 
-// Serve static files
 app.use(express.static('public'));
 app.use(express.json());
 
-// Helper function to format date
 const formatDate = (dateStr) => {
     return new Date(dateStr).toLocaleString();
 };
@@ -240,16 +238,13 @@ app.get('/tickets/:id', async (req, res) => {
     }
 });
 
-// In ticket-panel.js, add the close ticket endpoint:
 app.post('/tickets/:id/close', async (req, res) => {
     try {
         const ticketId = req.params.id;
         const ticket = await TicketThread.getById(ticketId);
         
-        // Close ticket in database
         await TicketThread.closeTicket(ticketId);
         
-        // Close Discord thread
         const ticketChannel = client.channels.cache.get(config.ticketChannelId);
         const thread = await ticketChannel.threads.fetch(ticket.thread_id);
         if (thread) {
@@ -272,7 +267,6 @@ app.post('/tickets/:id/close', async (req, res) => {
     }
 });
 
-// Update the reply endpoint to send Discord embeds:
 app.post('/tickets/:id/reply', async (req, res) => {
     try {
         const { message, staffId } = req.body;
@@ -283,11 +277,10 @@ app.post('/tickets/:id/reply', async (req, res) => {
             throw new Error('Invalid ticket or missing thread ID');
         }
 
-        // Add message to database
         await TicketThread.addMessage(ticketId, staffId, 'Staff Member', message, true);
 
         try {
-            // Send Discord embed
+            
             const ticketChannel = await client.channels.fetch(config.ticketChannelId);
             if (!ticketChannel) {
                 throw new Error('Ticket channel not found');

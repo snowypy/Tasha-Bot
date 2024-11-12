@@ -2,7 +2,7 @@ const sqlite3 = require('sqlite3').verbose();
 const db = new sqlite3.Database('tickets.db');
 
 db.serialize(() => {
-    // Create tickets table
+
     db.run(`
         CREATE TABLE IF NOT EXISTS tickets (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -16,7 +16,6 @@ db.serialize(() => {
         )
     `);
 
-    // Create messages table
     db.run(`
         CREATE TABLE IF NOT EXISTS ticket_messages (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -30,7 +29,6 @@ db.serialize(() => {
         )
     `);
 
-    // Create index
     db.run(`
         CREATE INDEX IF NOT EXISTS idx_ticket_messages_ticket_id 
         ON ticket_messages(ticket_id)

@@ -188,10 +188,6 @@ class TicketThread {
         });
     }
 
-    static async replyToTicket(id, message, staffId) {
-        // Existing code...
-    }
-
     static async assignTicket(id, staffId) {
         return new Promise((resolve, reject) => {
             db.run('UPDATE tickets SET assignee = ? WHERE id = ?', [staffId, id], (err) => {
