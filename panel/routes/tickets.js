@@ -1,7 +1,7 @@
 // panel/routes/tickets.js
 
 const express = require('express');
-const { Ticket } = require('../../bot/models/ticket');
+const { Ticket, StaffMember } = require('../../bot/models/ticket');
 const router = express.Router();
 
 function ensureAuthenticated(req, res, next) {
@@ -20,6 +20,26 @@ router.get('/', ensureAuthenticated, async (req, res) => {
     console.error('Error fetching tickets:', error);
     res.status(500).send('An error occurred while fetching your tickets.');
   }
+});
+
+router.post('/close/:id', async (req, res) => {
+  const ticket = await Ticket.findByPk(req.params.id);
+  ticket.status = 'closed';
+  await ticket.save();
+  res.json({ success: true });
+});
+
+router.post('/assign/:id', async (req, res) => {
+  const ticket = await Ticket.findByPk(req.params.id);
+  ticket.assignedTo = req.body.staffId;
+  await ticket.save();
+  res.json({ success: true });
+});
+
+router.post('/reply/:id', async (req, res) => {
+  const ticket = await Ticket.findByPk(req.params.id);
+  // Add reply logic here using Discord.js
+  res.json({ success: true });
 });
 
 module.exports = router;

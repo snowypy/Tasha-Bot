@@ -2,22 +2,27 @@ const { DataTypes } = require('sequelize');
 const sequelize = require('./db');
 
 const Ticket = sequelize.define('Ticket', {
-  userId: {
-    type: DataTypes.STRING,
-    allowNull: false
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
   },
-  content: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
-  status: {
-    type: DataTypes.STRING,
-    defaultValue: 'open'
-  },
-  messages: {
-    type: DataTypes.JSON, // Array (author, content, timestamp)
-    defaultValue: []
-  }
+  userId: DataTypes.STRING,
+  content: DataTypes.TEXT,
+  status: DataTypes.STRING,
+  assignedTo: DataTypes.STRING,
+  threadId: DataTypes.STRING
 });
 
-module.exports = { Ticket };
+const StaffMember = sequelize.define('StaffMember', {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  discordId: DataTypes.STRING,
+  username: DataTypes.STRING,
+  role: DataTypes.STRING
+});
+
+module.exports = { Ticket, StaffMember };
