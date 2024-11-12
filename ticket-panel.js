@@ -266,8 +266,8 @@ app.get('/tickets/:id', isAuthenticated, async (req, res) => {
         }
 
         const messages = await TicketThread.getMessages(req.params.id);
-        const tags = await TicketTags.getConfiguredTags();
-        const ticketTags = await TicketTags.getTagsForTicket(ticket.id);
+        const tags = await TicketTags.getConfiguredTags() || [];
+        const ticketTags = await TicketTags.getTagsForTicket(ticket.id) || [];
 
         console.log('Ticket details retrieved:', ticket);
 
