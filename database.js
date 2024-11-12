@@ -34,6 +34,15 @@ db.serialize(() => {
         ON ticket_messages(ticket_id)
     `);
 
+    db.run(`
+        CREATE TABLE IF NOT EXISTS ticket_tags (
+            ticket_id INTEGER,
+            tag_name TEXT,
+            PRIMARY KEY (ticket_id, tag_name),
+            FOREIGN KEY(ticket_id) REFERENCES tickets(id)
+        )
+    `);
+
     new Promise((resolve, reject) => {
         db.all("PRAGMA table_info(tickets)", (err, rows) => {
             if (err) {
