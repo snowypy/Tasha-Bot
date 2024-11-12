@@ -1,0 +1,23 @@
+.ticket-card {
+    @apply p-6 rounded-lg shadow-sm transition-all duration-200 flex flex-col items-center text-center;
+}
+
+.ticket-card h3 {
+    @apply text-lg font-medium mb-4;
+}
+
+.ticket-card .icon {
+    @apply text-4xl;
+}
+
+.btn-primary {
+    @apply bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors;
+}
+
+.btn-secondary {
+    @apply bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300 transition-colors;
+}
+
+.ticket-details {
+    @apply bg-white shadow-sm rounded-lg p-6 mb-4;
+}
