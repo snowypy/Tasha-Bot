@@ -35,6 +35,11 @@ db.serialize(() => {
         CREATE INDEX IF NOT EXISTS idx_ticket_messages_ticket_id 
         ON ticket_messages(ticket_id)
     `);
+
+    db.run(`
+        ALTER TABLE tickets 
+        ADD COLUMN thread_id TEXT;
+    `);
 });
 
 module.exports = db;

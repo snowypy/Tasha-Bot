@@ -5,6 +5,54 @@ const { TicketTags } = require('./ticket-tags.js');
 
 const app = express();
 
+const renderTemplate = (content, title = 'Tasha Ticket Panel') => `
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${title}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        discord: {
+                            'blurple': '#5865F2',
+                            'green': '#57F287',
+                            'yellow': '#FEE75C',
+                            'red': '#ED4245',
+                            'dark': '#36393F',
+                            'darker': '#2F3136',
+                            'darkest': '#202225'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="bg-discord-darkest text-gray-100">
+    <nav class="bg-discord-dark shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <a href="/" class="text-white text-xl font-semibold">Tasha Ticket System</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        ${content}
+    </main>
+    <script src="/js/main.js"></script>
+</body>
+</html>
+`;
+
 // Serve static files
 app.use(express.static('public'));
 app.use(express.json());
@@ -15,53 +63,27 @@ const formatDate = (dateStr) => {
 };
 
 app.get('/', (req, res) => {
-    res.send(`
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Tasha Ticket Panel</title>
-            <script src="https://cdn.tailwindcss.com"></script>
-            <link rel="stylesheet" href="/css/style.css">
-        </head>
-        <body class="bg-gray-100">
-            <div class="min-h-screen">
-                <nav class="bg-indigo-600 shadow-lg">
-                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div class="flex items-center justify-between h-16">
-                            <div class="flex items-center">
-                                <span class="text-white text-xl font-semibold">Tasha Ticket System</span>
-                            </div>
-                        </div>
-                    </div>
-                </nav>
-                
-                <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <a href="/tickets?status=open" class="ticket-card bg-green-100 hover:bg-green-200">
-                            <h3>Open Tickets</h3>
-                            <div class="icon">📬</div>
-                        </a>
-                        <a href="/tickets?status=closed" class="ticket-card bg-red-100 hover:bg-red-200">
-                            <h3>Closed Tickets</h3>
-                            <div class="icon">📪</div>
-                        </a>
-                        <a href="/tickets?status=unassigned" class="ticket-card bg-yellow-100 hover:bg-yellow-200">
-                            <h3>Unassigned Tickets</h3>
-                            <div class="icon">📥</div>
-                        </a>
-                        <a href="/tickets?status=mine" class="ticket-card bg-blue-100 hover:bg-blue-200">
-                            <h3>Your Tickets</h3>
-                            <div class="icon">👤</div>
-                        </a>
-                    </div>
-                </main>
-            </div>
-            <script src="/js/main.js"></script>
-        </body>
-        </html>
-    `);
+    const content = `
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <a href="/tickets?status=open" class="ticket-card">
+                <h3>Open Tickets</h3>
+                <div class="icon">📬</div>
+            </a>
+            <a href="/tickets?status=closed" class="ticket-card">
+                <h3>Closed Tickets</h3>
+                <div class="icon">📪</div>
+            </a>
+            <a href="/tickets?status=unassigned" class="ticket-card">
+                <h3>Unassigned Tickets</h3>
+                <div class="icon">📥</div>
+            </a>
+            <a href="/tickets?status=mine" class="ticket-card">
+                <h3>Your Tickets</h3>
+                <div class="icon">👤</div>
+            </a>
+        </div>
+    `;
+    res.send(renderTemplate(content));
 });
 
 app.get('/tickets', async (req, res) => {
@@ -87,61 +109,37 @@ app.get('/tickets', async (req, res) => {
             statusTitle = 'All Tickets';
         }
 
-        res.send(`
-            <!DOCTYPE html>
-            <html lang="en">
-            <head>
-                <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>${statusTitle} - Tasha</title>
-                <script src="https://cdn.tailwindcss.com"></script>
-                <link rel="stylesheet" href="/css/style.css">
-            </head>
-            <body class="bg-gray-100">
-                <nav class="bg-indigo-600 shadow-lg">
-                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div class="flex items-center justify-between h-16">
-                            <div class="flex items-center">
-                                <a href="/" class="text-white text-xl font-semibold">Tasha Ticket System</a>
-                            </div>
+        const content = `
+        <h1 class="text-2xl font-semibold mb-6">${statusTitle}</h1>
+        <div class="grid gap-6">
+            ${tickets.map(ticket => `
+                <div class="bg-discord-dark shadow-sm rounded-lg p-6 hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="text-lg font-medium">${ticket.category} - ${ticket.discord_username}</h3>
+                            <p class="text-gray-400">Opened: ${formatDate(ticket.created_at)}</p>
                         </div>
+                        <span class="px-3 py-1 rounded-full text-sm ${
+                            ticket.status === 'open' ? 'bg-discord-green text-black' : 'bg-discord-red text-white'
+                        }">${ticket.status}</span>
                     </div>
-                </nav>
-                
-                <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-                    <h1 class="text-2xl font-semibold mb-6">${statusTitle}</h1>
-                    <div class="grid gap-6">
-                        ${tickets.map(ticket => `
-                            <div class="bg-white shadow-sm rounded-lg p-6 hover:shadow-md transition-shadow">
-                                <div class="flex justify-between items-start">
-                                    <div>
-                                        <h3 class="text-lg font-medium">${ticket.category} - ${ticket.discord_username}</h3>
-                                        <p class="text-sm text-gray-500">Opened: ${formatDate(ticket.created_at)}</p>
-                                    </div>
-                                    <span class="px-3 py-1 rounded-full text-sm ${
-                                        ticket.status === 'open' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                                    }">${ticket.status}</span>
-                                </div>
-                                <div class="mt-4 flex gap-2">
-                                    <button onclick="location.href='/tickets/${ticket.id}'" 
-                                            class="btn-primary">
-                                        View Details
-                                    </button>
-                                    ${ticket.status === 'open' ? `
-                                        <button onclick="closeTicket(${ticket.id})" 
-                                                class="btn-secondary">
-                                            Close Ticket
-                                        </button>
-                                    ` : ''}
-                                </div>
-                            </div>
-                        `).join('')}
+                    <div class="mt-4 flex gap-2">
+                        <button onclick="location.href='/tickets/${ticket.id}'" 
+                                class="btn-primary">
+                            View Details
+                        </button>
+                        ${ticket.status === 'open' ? `
+                            <button onclick="closeTicket(${ticket.id})" 
+                                    class="btn-secondary">
+                                Close Ticket
+                            </button>
+                        ` : ''}
                     </div>
-                </main>
-                <script src="/js/main.js"></script>
-            </body>
-            </html>
-        `);
+                </div>
+            `).join('')}
+        </div>
+    `;
+    res.send(renderTemplate(content, `${statusTitle} - Tasha`));
     } catch (error) {
         res.status(500).send('Error loading tickets');
     }
@@ -152,107 +150,117 @@ app.get('/tickets/:id', async (req, res) => {
         const ticket = await TicketThread.getById(req.params.id);
         const messages = await TicketThread.getMessages(req.params.id);
         
-        res.send(`
-            <!DOCTYPE html>
-            <html lang="en">
-            <head>
-                <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>Ticket #${ticket.id} - Tasha</title>
-                <script src="https://cdn.tailwindcss.com"></script>
-                <link rel="stylesheet" href="/css/style.css">
-            </head>
-            <body class="bg-gray-100">
-                <nav class="bg-indigo-600 shadow-lg">
-                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div class="flex items-center justify-between h-16">
-                            <div class="flex items-center">
-                                <a href="/" class="text-white text-xl font-semibold">Tasha Ticket System</a>
-                            </div>
+        const content = `
+        <div class="bg-discord-dark rounded-lg shadow-sm p-6 mb-6">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h1 class="text-2xl font-semibold mb-2">Ticket #${ticket.id}</h1>
+                    <p class="text-gray-400">Opened by ${ticket.discord_username}</p>
+                    <p class="text-gray-400">Category: ${ticket.category}</p>
+                </div>
+                <span class="px-3 py-1 rounded-full text-sm ${
+                    ticket.status === 'open' ? 'bg-discord-green text-black' : 'bg-discord-red text-white'
+                }">${ticket.status}</span>
+            </div>
+        </div>
+
+        <div class="bg-discord-dark rounded-lg shadow-sm p-6 mb-6">
+            <div class="space-y-4 mb-6 h-96 overflow-y-auto" id="messageContainer">
+                ${messages.map(msg => `
+                    <div class="flex ${msg.is_staff ? 'justify-end' : 'justify-start'}">
+                        <div class="max-w-[70%] ${msg.is_staff ? 'bg-discord-blurple bg-opacity-20' : 'bg-discord-darker'} rounded-lg p-3">
+                            <p class="text-sm font-medium">${msg.username}</p>
+                            <p class="text-gray-300">${msg.content}</p>
+                            <p class="text-xs text-gray-500 mt-1">${formatDate(msg.timestamp)}</p>
                         </div>
                     </div>
-                </nav>
+                `).join('')}
+            </div>
 
-                <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-                    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <h1 class="text-2xl font-semibold mb-2">Ticket #${ticket.id}</h1>
-                                <p class="text-gray-600">Opened by ${ticket.discord_username}</p>
-                                <p class="text-gray-600">Category: ${ticket.category}</p>
-                            </div>
-                            <span class="px-3 py-1 rounded-full text-sm ${
-                                ticket.status === 'open' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                            }">${ticket.status}</span>
-                        </div>
+            ${ticket.status === 'open' ? `
+                <form id="replyForm" class="mt-4">
+                    <div class="flex gap-2">
+                        <input type="text" 
+                               id="replyContent" 
+                               class="flex-1 bg-discord-darker border-discord-dark text-gray-100 rounded-md focus:ring-discord-blurple focus:border-discord-blurple"
+                               placeholder="Type your reply...">
+                        <button type="submit" class="btn-primary">Send Reply</button>
                     </div>
+                </form>
+            ` : ''}
+        </div>
 
-                    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
-                        <div class="space-y-4 mb-6 h-96 overflow-y-auto" id="messageContainer">
-                            ${messages.map(msg => `
-                                <div class="flex ${msg.is_staff ? 'justify-end' : 'justify-start'}">
-                                    <div class="max-w-[70%] ${msg.is_staff ? 'bg-indigo-100' : 'bg-gray-100'} rounded-lg p-3">
-                                        <p class="text-sm font-medium">${msg.username}</p>
-                                        <p class="text-gray-700">${msg.content}</p>
-                                        <p class="text-xs text-gray-500 mt-1">${formatDate(msg.timestamp)}</p>
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
+        <script>
+            const ticketId = ${ticket.id};
+            const replyForm = document.getElementById('replyForm');
+            const messageContainer = document.getElementById('messageContainer');
 
-                        ${ticket.status === 'open' ? `
-                            <form id="replyForm" class="mt-4">
-                                <div class="flex gap-2">
-                                    <input type="text" 
-                                           id="replyContent" 
-                                           class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                                           placeholder="Type your reply...">
-                                    <button type="submit" class="btn-primary">Send Reply</button>
-                                </div>
-                            </form>
-                        ` : ''}
-                    </div>
-                </main>
-
-                <script>
-                    const ticketId = ${ticket.id};
-                    const replyForm = document.getElementById('replyForm');
-                    const messageContainer = document.getElementById('messageContainer');
-
-                    if (replyForm) {
-                        replyForm.addEventListener('submit', async (e) => {
-                            e.preventDefault();
-                            const content = document.getElementById('replyContent').value;
-                            
-                            try {
-                                const response = await fetch(\`/tickets/\${ticketId}/reply\`, {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                    },
-                                    body: JSON.stringify({ 
-                                        message: content,
-                                        staffId: 'staff-member-id' // You'll need to implement proper staff authentication
-                                    })
-                                });
-
-                                if (response.ok) {
-                                    location.reload();
-                                }
-                            } catch (error) {
-                                console.error('Error sending reply:', error);
-                            }
+            if (replyForm) {
+                replyForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const content = document.getElementById('replyContent').value;
+                    
+                    try {
+                        const response = await fetch(\`/tickets/\${ticketId}/reply\`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ 
+                                message: content,
+                                staffId: 'staff-member-id'
+                            })
                         });
+
+                        if (response.ok) {
+                            location.reload();
+                        }
+                    } catch (error) {
+                        console.error('Error sending reply:', error);
                     }
-                </script>
-            </body>
-            </html>
-        `);
+                });
+            }
+        </script>
+    `;
+    res.send(renderTemplate(content, `Ticket #${ticket.id} - Tasha`));
     } catch (error) {
         res.status(500).send('Error loading ticket details');
     }
 });
 
+// In ticket-panel.js, add the close ticket endpoint:
+app.post('/tickets/:id/close', async (req, res) => {
+    try {
+        const ticketId = req.params.id;
+        const ticket = await TicketThread.getById(ticketId);
+        
+        // Close ticket in database
+        await TicketThread.closeTicket(ticketId);
+        
+        // Close Discord thread
+        const ticketChannel = client.channels.cache.get(config.ticketChannelId);
+        const thread = await ticketChannel.threads.fetch(ticket.thread_id);
+        if (thread) {
+            await thread.send({
+                embeds: [{
+                    color: 0xff0000,
+                    title: '🔒 Ticket Closed',
+                    description: 'This ticket has been closed by a staff member.',
+                    timestamp: new Date()
+                }]
+            });
+            await thread.setLocked(true);
+            await thread.setArchived(true);
+        }
+        
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error closing ticket:', error);
+        res.status(500).json({ error: 'Failed to close ticket' });
+    }
+});
+
+// Update the reply endpoint to send Discord embeds:
 app.post('/tickets/:id/reply', async (req, res) => {
     try {
         const { message, staffId } = req.body;
@@ -263,6 +271,22 @@ app.post('/tickets/:id/reply', async (req, res) => {
         
         const ticket = await TicketThread.getById(ticketId);
         
+        // Send Discord embed
+        const ticketChannel = client.channels.cache.get(config.ticketChannelId);
+        const thread = await ticketChannel.threads.fetch(ticket.thread_id);
+        if (thread) {
+            await thread.send({
+                embeds: [{
+                    color: 0x5865f2,
+                    author: {
+                        name: 'Staff Response',
+                        icon_url: 'https://cdn.discordapp.com/embed/avatars/0.png'
+                    },
+                    description: message,
+                    timestamp: new Date()
+                }]
+            });
+        }
         
         res.json({ success: true });
     } catch (error) {

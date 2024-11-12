@@ -1,23 +1,35 @@
 .ticket-card {
-    @apply p-6 rounded-lg shadow-sm transition-all duration-200 flex flex-col items-center text-center;
-}
-
-.ticket-card h3 {
-    @apply text-lg font-medium mb-4;
-}
-
-.ticket-card .icon {
-    @apply text-4xl;
+    @apply p-6 rounded-lg shadow-sm transition-all duration-200 flex flex-col items-center text-center bg-discord-dark text-gray-100 hover:bg-discord-darker;
 }
 
 .btn-primary {
-    @apply bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-colors;
+    @apply bg-discord-blurple text-white px-4 py-2 rounded-md hover:bg-opacity-80 transition-colors;
 }
 
 .btn-secondary {
-    @apply bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300 transition-colors;
+    @apply bg-discord-dark text-gray-100 px-4 py-2 rounded-md hover:bg-discord-darker transition-colors;
 }
 
 .ticket-details {
-    @apply bg-white shadow-sm rounded-lg p-6 mb-4;
+    @apply bg-discord-dark rounded-lg shadow-sm p-6 mb-4;
+}
+
+.message-container {
+    @apply space-y-4 mb-6 h-96 overflow-y-auto bg-discord-darker p-4 rounded-lg;
+}
+
+.message-bubble {
+    @apply max-w-[70%] rounded-lg p-3;
+}
+
+.message-bubble.staff {
+    @apply bg-discord-blurple bg-opacity-20;
+}
+
+.message-bubble.user {
+    @apply bg-discord-dark;
+}
+
+.input-field {
+    @apply bg-discord-darker border-discord-dark text-gray-100 rounded-md focus:ring-discord-blurple focus:border-discord-blurple;
 }
