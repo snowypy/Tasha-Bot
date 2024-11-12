@@ -1,6 +1,6 @@
 const express = require('express');
 const path = require('path');
-const { Client } = require('discord.js');
+const { Client, GatewayIntentBits } = require('discord.js');
 const config = require('./config.js');
 const { TicketThread } = require('./ticket-thread.js');
 const { TicketTags } = require('./ticket-tags.js');
