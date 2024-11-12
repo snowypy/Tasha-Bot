@@ -38,7 +38,7 @@ app.use(session({
     resave: false,
     saveUninitialized: false,
     cookie: { 
-        secure: !isProduction, // Ensures the browser only sends the cookie over HTTPS
+        secure: isProduction, // Ensures the browser only sends the cookie over HTTPS
         maxAge: 24 * 60 * 60 * 1000 // 1 day
     }
 }));
@@ -47,10 +47,12 @@ app.use(passport.session());
 
 // Passport serialization
 passport.serializeUser((user, done) => {
+    console.log('Serializing user:', user);
     done(null, user);
 });
 
 passport.deserializeUser((obj, done) => {
+    console.log('Deserializing user:', obj);
     done(null, obj);
 });
 
@@ -119,13 +121,19 @@ const formatDate = (dateStr) => {
 };
 
 // Auth routes
-app.get('/auth/discord', passport.authenticate('discord'));
+app.get('/auth/discord', (req, res, next) => {
+    console.log('Initiating Discord authentication');
+    passport.authenticate('discord')(req, res, next);
+});
 
 app.get('/auth/discord/callback', 
     passport.authenticate('discord', {
         failureRedirect: '/auth/discord'
     }), 
-    (req, res) => res.redirect('/')
+    (req, res) => {
+        console.log('Authentication successful for user:', req.user);
+        res.redirect('/');
+    }
 );
 
 app.get('/logout', (req, res) => {
@@ -134,12 +142,14 @@ app.get('/logout', (req, res) => {
             console.error('Error during logout:', err);
             return res.status(500).send('Error logging out');
         }
+        console.log('User logged out:', req.user);
         res.redirect('/');
     });
 });
 
 // Protected routes
 app.get('/', isAuthenticated, (req, res) => {
+    console.log('Accessing dashboard for user:', req.user);
     const content = `
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <a href="/tickets?status=open" class="ticket-card">
@@ -164,6 +174,7 @@ app.get('/', isAuthenticated, (req, res) => {
 });
 
 app.get('/tickets', isAuthenticated, async (req, res) => {
+    console.log('Fetching tickets with status:', req.query.status);
     const { status } = req.query;
     let tickets;
     let statusTitle;
@@ -185,6 +196,8 @@ app.get('/tickets', isAuthenticated, async (req, res) => {
             tickets = await TicketThread.getAll();
             statusTitle = 'All Tickets';
         }
+
+        console.log(`Retrieved ${tickets.length} tickets for status: ${statusTitle}`);
 
         const content = `
             <h1 class="text-2xl font-semibold mb-6">${statusTitle}</h1>
@@ -224,11 +237,14 @@ app.get('/tickets', isAuthenticated, async (req, res) => {
 });
 
 app.get('/tickets/:id', isAuthenticated, async (req, res) => {
+    console.log('Fetching details for ticket ID:', req.params.id);
     try {
         const ticket = await TicketThread.getById(req.params.id);
         const messages = await TicketThread.getMessages(req.params.id);
         const tags = await TicketTags.getConfiguredTags();
         const ticketTags = await TicketTags.getTagsForTicket(ticket.id);
+
+        console.log('Ticket details retrieved:', ticket);
 
         const content = `
             <div class="bg-discord-dark rounded-lg shadow-sm p-6 mb-6">
@@ -295,6 +311,7 @@ app.get('/tickets/:id', isAuthenticated, async (req, res) => {
                 document.querySelectorAll('.tag-btn').forEach(btn => {
                     btn.addEventListener('click', async () => {
                         const tag = btn.dataset.tag;
+                        console.log('Tag clicked:', tag);
                         try {
                             const response = await fetch(\`/tickets/\${ticketId}/tags\`, {
                                 method: 'POST',
@@ -302,7 +319,10 @@ app.get('/tickets/:id', isAuthenticated, async (req, res) => {
                                 body: JSON.stringify({ tag })
                             });
                             if (response.ok) {
+                                console.log('Tag toggled:', tag);
                                 btn.classList.toggle('active');
+                            } else {
+                                console.error('Failed to toggle tag:', tag);
                             }
                         } catch (error) {
                             console.error('Error toggling tag:', error);
@@ -315,6 +335,7 @@ app.get('/tickets/:id', isAuthenticated, async (req, res) => {
                     replyForm.addEventListener('submit', async (e) => {
                         e.preventDefault();
                         const content = document.getElementById('replyContent').value;
+                        console.log('Reply submitted:', content);
                         
                         try {
                             const response = await fetch(\`/tickets/\${ticketId}/reply\`, {
@@ -329,7 +350,10 @@ app.get('/tickets/:id', isAuthenticated, async (req, res) => {
                             });
 
                             if (response.ok) {
+                                console.log('Reply sent successfully');
                                 location.reload();
+                            } else {
+                                console.error('Failed to send reply');
                             }
                         } catch (error) {
                             console.error('Error sending reply:', error);
@@ -346,11 +370,13 @@ app.get('/tickets/:id', isAuthenticated, async (req, res) => {
 });
 
 app.post('/tickets/:id/close', isAuthenticated, async (req, res) => {
+    console.log('Closing ticket ID:', req.params.id);
     try {
         const ticketId = req.params.id;
         const ticket = await TicketThread.getById(ticketId);
         
         await TicketThread.closeTicket(ticketId);
+        console.log('Ticket status updated to closed:', ticketId);
         
         const ticketChannel = client.channels.cache.get(config.ticketChannelId);
         const thread = await ticketChannel.threads.fetch(ticket.thread_id);
@@ -365,9 +391,11 @@ app.post('/tickets/:id/close', isAuthenticated, async (req, res) => {
             });
             await thread.setLocked(true);
             await thread.setArchived(true);
+            console.log('Discord thread locked and archived for ticket:', ticketId);
         }
         
         await TicketThread.addMessage(ticketId, req.user.id, req.user.username, 'Ticket closed by staff.', true);
+        console.log('Closed ticket message added:', ticketId);
         
         res.json({ success: true });
     } catch (error) {
@@ -377,9 +405,11 @@ app.post('/tickets/:id/close', isAuthenticated, async (req, res) => {
 });
 
 app.post('/tickets/:id/assign', isAuthenticated, async (req, res) => {
+    console.log('Assigning ticket ID:', req.params.id, 'to staff ID:', req.user.id);
     try {
         const staffId = req.user.id;
         await TicketThread.assignTicket(req.params.id, staffId);
+        console.log(`Ticket ${req.params.id} assigned to staff ${staffId}`);
         
         const ticket = await TicketThread.getById(req.params.id);
         const thread = await client.channels.cache.get(config.ticketChannelId).threads.fetch(ticket.thread_id);
@@ -390,6 +420,7 @@ app.post('/tickets/:id/assign', isAuthenticated, async (req, res) => {
                     description: `This ticket has been assigned to <@${staffId}>`
                 }]
             });
+            console.log('Assignment message sent to Discord thread for ticket:', req.params.id);
         }
         
         res.json({ success: true });
@@ -400,12 +431,14 @@ app.post('/tickets/:id/assign', isAuthenticated, async (req, res) => {
 });
 
 app.post('/tickets/:id/reply', isAuthenticated, async (req, res) => {
+    console.log('Replying to ticket ID:', req.params.id, 'Message:', req.body.message);
     try {
         const staffMember = req.user;
         const { message, embedData } = req.body;
 
         await TicketThread.addMessage(req.params.id, staffMember.id, staffMember.username, message, true);
-        
+        console.log('Reply message added to ticket:', req.params.id);
+
         const ticket = await TicketThread.getById(req.params.id);
         const thread = await client.channels.cache.get(config.ticketChannelId).threads.fetch(ticket.thread_id);
         if (thread) {
@@ -419,6 +452,7 @@ app.post('/tickets/:id/reply', isAuthenticated, async (req, res) => {
                 ...embedData
             };
             await thread.send({ embeds: [embed] });
+            console.log('Reply embed sent to Discord thread for ticket:', req.params.id);
         }
         
         res.json({ success: true });
@@ -429,10 +463,12 @@ app.post('/tickets/:id/reply', isAuthenticated, async (req, res) => {
 });
 
 app.post('/tickets/:id/tags', isAuthenticated, async (req, res) => {
+    console.log('Updating tags for ticket ID:', req.params.id, 'Tag:', req.body.tag);
     try {
         const { tag } = req.body;
         const ticketId = req.params.id;
         await TicketTags.addTags(ticketId, [tag]);
+        console.log('Tag added to ticket:', ticketId, 'Tag:', tag);
         res.json({ success: true });
     } catch (error) {
         console.error('Error updating tags:', error);
