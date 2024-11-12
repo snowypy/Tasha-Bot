@@ -4,8 +4,33 @@ const { TicketTags } = require('./ticket-tags.js');
 
 const app = express();
 
+app.get('/', (req, res) => {
+    res.send(`
+        <h1>Welcome to the Tasha Panel</h1>
+        <p>Please select the category to open below:</p>
+        <ul>
+            <li><a href="/tickets?status=open">Open Tickets</a></li>
+            <li><a href="/tickets?status=closed">Closed Tickets</a></li>
+            <li><a href="/tickets?status=unassigned">Unassigned Tickets</a></li>
+            <li><a href="/tickets?status=mine">Your Tickets</a></li>
+        </ul>
+    `);
+});
+
 app.get('/tickets', async (req, res) => {
-    const tickets = await TicketThread.getAll();
+    const { status } = req.query;
+    let tickets;
+    if (status === 'open') {
+        tickets = await TicketThread.getOpenTickets();
+    } else if (status === 'closed') {
+        tickets = await TicketThread.getClosedTickets();
+    } else if (status === 'unassigned') {
+        tickets = await TicketThread.getUnassignedTickets();
+    } else if (status === 'mine') {
+        tickets = await TicketThread.getTicketsForStaff(req.staffId);
+    } else {
+        tickets = await TicketThread.getAll();
+    }
     res.json(tickets);
 });
 
