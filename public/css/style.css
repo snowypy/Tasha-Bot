@@ -1,22 +1,17 @@
-
 .message-bubble {
     @apply max-w-[70%] rounded-lg p-3 backdrop-blur-sm transition-all duration-200;
 }
-
 .message-bubble.staff {
     @apply bg-discord-blurple/20 hover:bg-discord-blurple/30;
 }
-
 .message-bubble.user {
     @apply bg-discord-dark/80 hover:bg-discord-dark/90;
 }
-
 .tag-btn {
     @apply transition-all duration-200;
 }
-
 .tag-btn:hover {
-    @apply opacity-80;
+    filter: brightness(1.2);
 }
 
 .tag-btn.active {
