@@ -1,5 +1,12 @@
 module.exports = {
     discordToken: 'your-discord-bot-token',
+    discord: {
+        clientId: 'your-client-id',
+        clientSecret: 'your-client-secret',
+        callbackURL: 'http://localhost:3000/auth/discord/callback',
+        guildId: 'your-guild-id',
+        staffRoleIds: ['role-id-1', 'role-id-2']
+    },
     ticketChannelId: 'discord-channel-id-for-tickets',
     ticketCategories: [
         { id: 'category1', name: 'General Support' },

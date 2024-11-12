@@ -4,6 +4,8 @@ const { Client, GatewayIntentBits } = require('discord.js');
 const config = require('./config.js');
 const { TicketThread } = require('./ticket-thread.js');
 const { TicketTags } = require('./ticket-tags.js');
+const { isAuthenticated } = require('./middleware/auth');
+require('./auth');
 
 const app = express();
 
@@ -56,6 +58,19 @@ const renderTemplate = (content, title = 'Tasha Ticket Panel') => `
                 </div>
             </div>
         </div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <a href="/" class="text-white text-xl font-semibold">Tasha Ticket System</a>
+                </div>
+                ${req.user ? `
+                    <div class="flex items-center gap-4">
+                        <span class="text-gray-400">${req.user.username}</span>
+                        <a href="/logout" class="btn-secondary">Logout</a>
+                    </div>
+                ` : ''}
+            </div>
+        </div>
     </nav>
     <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         ${content}
@@ -68,12 +83,46 @@ const renderTemplate = (content, title = 'Tasha Ticket Panel') => `
 app.use(express.static('public'));
 app.use(express.json());
 
+app.use(session({
+    secret: 'your-session-secret',
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: process.env.NODE_ENV === 'production' }
+}));
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+passport.serializeUser((user, done) => done(null, user));
+passport.deserializeUser((user, done) => done(null, user));
+
 const formatDate = (dateStr) => {
     return new Date(dateStr).toLocaleString();
 };
 
+app.get('/auth/discord', passport.authenticate('discord'));
+
+app.get('/auth/discord/callback', 
+    passport.authenticate('discord', {
+        failureRedirect: '/auth/discord'
+    }), 
+    (req, res) => res.redirect('/')
+);
+
+app.get('/logout', (req, res) => {
+    req.logout(() => res.redirect('/'));
+});
+
 app.get('/', (req, res) => {
     const content = `
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-semibold">Ticket Panel</h1>
+            <div class="flex items-center gap-4">
+                <span class="text-gray-400">Logged in as ${req.user.username}</span>
+                <a href="/logout" class="btn-secondary">Logout</a>
+            </div>
+        </div>
+
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <a href="/tickets?status=open" class="ticket-card">
                 <h3>Open Tickets</h3>
