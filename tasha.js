@@ -36,7 +36,7 @@ client.on('ready', () => {
             if (interaction.type === InteractionType.MessageComponent && interaction.customId === 'create-ticket') {
                 const categoryId = interaction.values[0];
                 const category = config.ticketCategories.find(c => c.id === categoryId);
-                await TicketThread.create(interaction.user, category);
+                await TicketThread.create(client, interaction.user, category);
             }
         });
     } else {
