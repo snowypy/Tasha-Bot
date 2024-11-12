@@ -21,20 +21,21 @@ db.serialize(() => {
 
 class TicketThread {
     static async create(client, user, category) {
-        static async create(client, user, category) {
         const ticketChannel = client.channels.cache.get(config.ticketChannelId);
         const thread = await ticketChannel.threads.create({
             name: `${category.name} - ${user.username}`,
             autoArchiveDuration: 1440, // 24 hours
             reason: `New ticket created by ${user.username}`
         });
-    
+
         await thread.join();
-    
+
         await thread.send(`Hello ${user.username}, your ticket in the ${category.name} category has been created. A staff member will be with you shortly.`);
+
         const stmt = db.prepare('INSERT INTO tickets (discord_user_id, discord_username, category, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)');
         stmt.run(user.id, user.username, category.name, 'open', new Date().toISOString(), new Date().toISOString());
         stmt.finalize();
+
         return thread;
     }
 
