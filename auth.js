@@ -1,3 +1,4 @@
+// auth.js
 const passport = require('passport');
 const DiscordStrategy = require('passport-discord').Strategy;
 const config = require('./config.js');
@@ -6,30 +7,50 @@ passport.use(new DiscordStrategy({
     clientID: config.discord.clientId,
     clientSecret: config.discord.clientSecret,
     callbackURL: config.discord.callbackURL,
-    scope: ['identify', 'guilds.members.read']  // Add guilds.members.read scope
+    scope: ['identify', 'guilds', 'guilds.members.read'] // Added required scopes
 }, async (accessToken, refreshToken, profile, done) => {
     try {
-        // Check if user has the staff role directly from profile
+        console.log('Auth debug - Profile:', {
+            id: profile.id,
+            username: profile.username,
+            guilds: profile.guilds?.map(g => g.id)
+        });
+
+        // Find guild in user's guilds
         const guild = profile.guilds?.find(g => g.id === config.discord.guildId);
-        if (!guild) {
-            console.log('User not in required guild');
-            return done(null, false);
-        }
-
-        // Convert guild.roles to number for bitwise check
-        const hasStaffRole = (BigInt(guild.permissions) & BigInt(0x8)) !== BigInt(0);
         
-        if (!hasStaffRole) {
-            console.log('User lacks staff role');
+        if (!guild) {
+            console.log(`User ${profile.username} guild check failed. User's guilds:`, profile.guilds?.map(g => g.id));
+            console.log('Expected guild:', config.discord.guildId);
             return done(null, false);
         }
 
-        return done(null, {
+        // Check for staff role - bitwise check for ADMINISTRATOR or specified role
+        const hasAdmin = (BigInt(guild.permissions) & BigInt(0x8)) !== BigInt(0);
+        
+        console.log('Auth debug - Permissions:', {
+            userId: profile.id,
+            guildId: guild.id,
+            permissions: guild.permissions,
+            hasAdmin
+        });
+
+        const user = {
             id: profile.id,
             username: profile.username,
             avatar: profile.avatar,
-            isStaff: true
-        });
+            isStaff: hasAdmin,
+            accessToken
+        };
+
+        if (!hasAdmin) {
+            console.log(`User ${profile.username} lacks staff permissions`);
+            return done(null, false);
+        }
+
+        console.log(`User ${profile.username} authenticated successfully as staff`);
+        return done(null, user);
+
     } catch (err) {
         console.error('Auth error:', err);
         return done(err, false);
