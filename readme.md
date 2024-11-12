@@ -25,3 +25,14 @@
 ├── database.sqlite           // SQLite database file (automatically generated)
 └── package.json              // Dependencies
 ```
+
+## TO DO
+
+ - Add Close Function
+ - Add user thread
+ - Add staff ticket end panel
+ - Add staff member response
+ - Add staff member profile top right
+ - Add staff member logout
+ - Add staff member assigners
+ - Add staff member tickets.

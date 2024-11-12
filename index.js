@@ -40,6 +40,6 @@ const server = http.createServer(app);
 const io = socketIo(server);
 bot.startBot(io);
 
-server.listen(3000, () => {
-  console.log('Web server running on port 3000');
+server.listen(25579, () => {
+  console.log('Web server running on port 25579');
 });
