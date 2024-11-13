@@ -1,5 +1,5 @@
 // ticket-tags.js
-import db from './database.js';
+const db = require('./database.js');
 const config = require('./config.js');
 
 export class TicketTags {
