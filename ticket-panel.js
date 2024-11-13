@@ -269,67 +269,65 @@ app.get('/tickets/:id', isAuthenticated, async (req, res) => {
 
         const content = `
             <div class="bg-discord-dark rounded-lg shadow-sm p-6 mb-6">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <h1 class="text-2xl font-semibold mb-2">Ticket #${ticket.id}</h1>
-                        <p class="text-gray-400">Opened by ${ticket.discord_username}</p>
-                        <p class="text-gray-400">Category: ${ticket.category}</p>
-                    </div>
-                    <span class="px-3 py-1 rounded-full text-sm ${
-                        ticket.status === 'open' ? 'bg-discord-green text-black' : 'bg-discord-red text-white'
-                    }">${ticket.status}</span>
-                </div>
+        <div class="flex justify-between items-start">
+            <div>
+                <h1 class="text-2xl font-semibold mb-2">Ticket #${ticket.id}</h1>
+                <p class="text-gray-400">Opened by ${ticket.discord_username}</p>
+                <p class="text-gray-400">Category: ${ticket.category}</p>
             </div>
-            <div class="bg-discord-dark rounded-lg shadow-sm p-6 mb-6">
-                <h3 class="text-lg font-medium mb-4">Tags</h3>
-                <div class="flex flex-wrap gap-2 mb-4">
-                    ${tags.map(tag => `
-                        <button 
-                            type="button"
-                            data-tag="${tag.name}"
-                            class="tag-btn px-3 py-1 rounded-full text-sm transition-all duration-200 ${
-                                ticketTags.includes(tag.name) ? 'active' : ''
-                            }"
-                            style="${ticketTags.includes(tag.name) ? 
-                                `background-color: ${tagColors[tag.name]}20; color: ${tagColors[tag.name]}; border: 1px solid ${tagColors[tag.name]}40` : ''
-                            }"
-                        >
-                            ${tag.name}
-                        </button>
-                    `).join('')}
+            <span class="px-3 py-1 rounded-full text-sm ${
+                ticket.status === 'open' ? 'bg-discord-green text-black' : 'bg-discord-red text-white'
+            }">${ticket.status}</span>
+        </div>
+    </div>
+    <div class="bg-discord-dark rounded-lg shadow-sm p-6 mb-6">
+        <h3 class="text-lg font-medium mb-4">Tags</h3>
+        <div class="flex flex-wrap gap-2 mb-4">
+            ${tags.map(tag => `
+                <button 
+                    type="button"
+                    data-tag="${tag.name}"
+                    class="tag-btn px-3 py-1 rounded-full text-sm transition-all duration-200 ${
+                        ticketTags.includes(tag.name) ? 'active' : ''
+                    }"
+                    style="${ticketTags.includes(tag.name) ? 
+                        `background-color: ${tagColors[tag.name]}20; color: ${tagColors[tag.name]}; border: 1px solid ${tagColors[tag.name]}40` : ''
+                    }"
+                >
+                    ${tag.name}
+                </button>
+            `).join('')}
+        </div>
+    </div>
+    <div class="bg-discord-dark rounded-lg shadow-sm p-6 mb-6 message-container" id="messageContainer">
+        ${messages.map(msg => `
+            <div class="flex ${msg.is_staff ? 'justify-end' : 'justify-start'} items-start">
+                ${!msg.is_staff ? `
+                    <img src="${msg.avatar_url}" alt="${msg.username}" class="w-8 h-8 rounded-full mr-2">
+                ` : ''}
+                <div class="message-bubble ${msg.is_staff ? 'staff' : 'user'}">
+                    <p class="text-sm font-medium">${msg.username}</p>
+                    <p class="text-gray-300">${msg.content}</p>
+                    <p class="text-xs text-gray-500 mt-1">${TicketThread.formatDate(msg.timestamp)}</p>
                 </div>
-            </div>
-            <div class="bg-discord-dark rounded-lg shadow-sm p-6 mb-6">
-                <div class="space-y-4 mb-6 h-96 overflow-y-auto" id="messageContainer">
-                    ${messages.map(msg => `
-                        <div class="flex ${msg.is_staff ? 'justify-end' : 'justify-start'} items-start">
-                            ${!msg.is_staff ? `
-                                <img src="${msg.avatar_url}" alt="${msg.username}" class="w-8 h-8 rounded-full mr-2">
-                            ` : ''}
-                            <div class="message-bubble ${msg.is_staff ? 'staff' : 'user'}">
-                                <p class="text-sm font-medium">${msg.username}</p>
-                                <p class="text-gray-300">${msg.content}</p>
-                                <p class="text-xs text-gray-500 mt-1">${TicketThread.formatDate(msg.timestamp)}</p>
-                            </div>
-                            ${msg.is_staff ? `
-                                <img src="${msg.avatar_url}" alt="${msg.username}" class="w-8 h-8 rounded-full ml-2">
-                            ` : ''}
-                        </div>
-                    `).join('')}
-                </div>
-
-                ${ticket.status === 'open' ? `
-                    <form id="replyForm" class="mt-4">
-                        <div class="flex gap-2">
-                            <input type="text" 
-                                   id="replyContent" 
-                                   class="flex-1 bg-discord-darker border-discord-dark text-gray-100 rounded-md focus:ring-discord-blurple focus:border-discord-blurple"
-                                   placeholder="Type your reply...">
-                            <button type="submit" class="btn-primary">Send Reply</button>
-                        </div>
-                    </form>
+                ${msg.is_staff ? `
+                    <img src="${msg.avatar_url}" alt="${msg.username}" class="w-8 h-8 rounded-full ml-2">
                 ` : ''}
             </div>
+        `).join('')}
+    </div>
+
+            ${ticket.status === 'open' ? `
+        <form id="replyForm" class="mt-4">
+            <div class="flex gap-2">
+                <input type="text" 
+                       id="replyContent" 
+                       class="flex-1 bg-discord-darker border-discord-dark text-gray-100 rounded-md focus:ring-discord-blurple focus:border-discord-blurple"
+                       placeholder="Type your reply...">
+                <button type="submit" class="btn-primary">Send Reply</button>
+            </div>
+        </form>
+    ` : ''}
 
             <script>
                 const ticketId = ${ticket.id};
