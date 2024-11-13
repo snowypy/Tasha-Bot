@@ -1,5 +1,5 @@
-const { Client, GatewayIntentBits, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, InteractionType } = require('discord.js');
-const { TicketPanel } = require('./ticket-panel.js');
+// tasha.js
+const { Client, GatewayIntentBits, ActionRowBuilder, StringSelectMenuBuilder, InteractionType } = require('discord.js');
 const { TicketThread } = require('./ticket-thread.js');
 const { TicketTags } = require('./ticket-tags.js');
 const config = require('./config.js');
@@ -64,12 +64,15 @@ client.on('messageCreate', async (message) => {
             });
 
             if (ticket) {
+                const avatarUrl = message.author.displayAvatarURL({ format: 'png' });
+
                 await TicketThread.addMessage(
                     ticket.id,
                     message.author.id,
                     message.author.username,
                     message.content,
-                    false
+                    false,
+                    avatarUrl
                 );
             }
         } catch (error) {

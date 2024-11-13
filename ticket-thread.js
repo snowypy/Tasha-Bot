@@ -13,6 +13,7 @@ db.serialize(() => {
             category TEXT NOT NULL,
             status TEXT NOT NULL,
             assignee TEXT,
+            thread_id TEXT,
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL
         )
@@ -28,6 +29,7 @@ db.run(`
         content TEXT NOT NULL,
         timestamp TEXT NOT NULL,
         is_staff BOOLEAN,
+        avatar_url TEXT,
         FOREIGN KEY(ticket_id) REFERENCES tickets(id)
     )
 `);
@@ -94,11 +96,11 @@ class TicketThread {
             );
         });
     }
-    
-    static async addMessage(ticketId, userId, username, content, isStaff = false) {
+
+    static async addMessage(ticketId, userId, username, content, isStaff = false, avatarUrl) {
         return new Promise((resolve, reject) => {
             const stmt = db.prepare(
-                'INSERT INTO ticket_messages (ticket_id, user_id, username, content, timestamp, is_staff) VALUES (?, ?, ?, ?, ?, ?)'
+                'INSERT INTO ticket_messages (ticket_id, user_id, username, content, timestamp, is_staff, avatar_url) VALUES (?, ?, ?, ?, ?, ?, ?)'
             );
             stmt.run(
                 ticketId, 
@@ -107,6 +109,7 @@ class TicketThread {
                 content, 
                 new Date().toISOString(),
                 isStaff,
+                avatarUrl,
                 (err) => {
                     if (err) reject(err);
                     else resolve();
@@ -210,6 +213,11 @@ class TicketThread {
                 }
             });
         });
+    }
+
+    static formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleString();
     }
 }
 

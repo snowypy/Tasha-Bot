@@ -15,6 +15,8 @@ const app = express();
 // Determine if the app is running in production
 const isProduction = process.env.NODE_ENV === 'production';
 
+
+
 // Trust the first proxy if behind one (e.g., Heroku, Nginx)
 if (isProduction) {
     app.set('trust proxy', 1);
@@ -54,6 +56,42 @@ passport.serializeUser((user, done) => {
 passport.deserializeUser((obj, done) => {
     console.log('Deserializing user:', obj);
     done(null, obj);
+});
+
+// Inside <script> tag in ticket details page
+const tagColors = {
+    'Urgent': '#FF0000',
+    'Bug': '#FFA500',
+    // Add other tags and their colors
+};
+
+document.querySelectorAll('.tag-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+        const tag = btn.dataset.tag;
+        try {
+            const response = await fetch(`/tickets/${ticketId}/tags`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tag })
+            });
+            if (response.ok) {
+                btn.classList.toggle('active');
+                if (btn.classList.contains('active')) {
+                    btn.style.backgroundColor = `${tagColors[tag]}20`;
+                    btn.style.color = `${tagColors[tag]}`;
+                    btn.style.border = `1px solid ${tagColors[tag]}40`;
+                } else {
+                    btn.style.backgroundColor = '#555';
+                    btn.style.color = '#888';
+                    btn.style.border = '1px solid #444';
+                }
+            } else {
+                console.error('Failed to toggle tag:', tag);
+            }
+        } catch (error) {
+            console.error('Error toggling tag:', error);
+        }
+    });
 });
 
 // Render template function
@@ -197,7 +235,17 @@ app.get('/tickets', isAuthenticated, async (req, res) => {
             statusTitle = 'All Tickets';
         }
 
+        // Fetch tags for each ticket
+        for (const ticket of tickets) {
+            ticket.tags = await TicketTags.getTagsForTicket(ticket.id);
+        }
+
         console.log(`Retrieved ${tickets.length} tickets for status: ${statusTitle}`);
+
+        const tagColors = config.ticketTags.reduce((acc, tag) => {
+            acc[tag.name] = tag.color;
+            return acc;
+        }, {});
 
         const content = `
             <h1 class="text-2xl font-semibold mb-6">${statusTitle}</h1>
@@ -207,7 +255,17 @@ app.get('/tickets', isAuthenticated, async (req, res) => {
                         <div class="flex justify-between items-start">
                             <div>
                                 <h3 class="text-lg font-medium">${ticket.category} - ${ticket.discord_username}</h3>
-                                <p class="text-gray-400">Opened: ${formatDate(ticket.created_at)}</p>
+                                <p class="text-gray-400">Opened: ${TicketThread.formatDate(ticket.created_at)}</p>
+                                <!-- Display tags -->
+                                <div class="flex flex-wrap gap-2 mt-2">
+                                    ${ticket.tags.map(tag => `
+                                        <span 
+                                            class="tag-btn active"
+                                            style="background-color: ${tagColors[tag]}20; color: ${tagColors[tag]}; border: 1px solid ${tagColors[tag]}40">
+                                            ${tag}
+                                        </span>
+                                    `).join('')}
+                                </div>
                             </div>
                             <span class="px-3 py-1 rounded-full text-sm ${
                                 ticket.status === 'open' ? 'bg-discord-green text-black' : 'bg-discord-red text-white'
@@ -244,7 +302,10 @@ app.get('/tickets/:id', isAuthenticated, async (req, res) => {
         const tags = await TicketTags.getConfiguredTags();
         const ticketTags = await TicketTags.getTagsForTicket(ticket.id);
 
-        console.log('Ticket details retrieved:', ticket);
+        const tagColors = config.ticketTags.reduce((acc, tag) => {
+            acc[tag.name] = tag.color;
+            return acc;
+        }, {});
 
         const content = `
             <div class="bg-discord-dark rounded-lg shadow-sm p-6 mb-6">
@@ -269,22 +330,30 @@ app.get('/tickets/:id', isAuthenticated, async (req, res) => {
                             class="tag-btn px-3 py-1 rounded-full text-sm transition-all duration-200 ${
                                 ticketTags.includes(tag.name) ? 'active' : ''
                             }"
-                            style="background-color: ${tag.color}20; color: ${tag.color}; border: 1px solid ${tag.color}40">
+                            style="${ticketTags.includes(tag.name) ? 
+                                `background-color: ${tagColors[tag.name]}20; color: ${tagColors[tag.name]}; border: 1px solid ${tagColors[tag.name]}40` : ''
+                            }"
+                        >
                             ${tag.name}
                         </button>
                     `).join('')}
                 </div>
             </div>
-
             <div class="bg-discord-dark rounded-lg shadow-sm p-6 mb-6">
                 <div class="space-y-4 mb-6 h-96 overflow-y-auto" id="messageContainer">
                     ${messages.map(msg => `
-                        <div class="flex ${msg.is_staff ? 'justify-end' : 'justify-start'}">
-                            <div class="max-w-[70%] ${msg.is_staff ? 'bg-discord-blurple bg-opacity-20' : 'bg-discord-darker'} rounded-lg p-3">
+                        <div class="flex ${msg.is_staff ? 'justify-end' : 'justify-start'} items-start">
+                            ${!msg.is_staff ? `
+                                <img src="${msg.avatar_url}" alt="${msg.username}" class="w-8 h-8 rounded-full mr-2">
+                            ` : ''}
+                            <div class="message-bubble ${msg.is_staff ? 'staff' : 'user'}">
                                 <p class="text-sm font-medium">${msg.username}</p>
                                 <p class="text-gray-300">${msg.content}</p>
-                                <p class="text-xs text-gray-500 mt-1">${formatDate(msg.timestamp)}</p>
+                                <p class="text-xs text-gray-500 mt-1">${TicketThread.formatDate(msg.timestamp)}</p>
                             </div>
+                            ${msg.is_staff ? `
+                                <img src="${msg.avatar_url}" alt="${msg.username}" class="w-8 h-8 rounded-full ml-2">
+                            ` : ''}
                         </div>
                     `).join('')}
                 </div>
@@ -305,12 +374,23 @@ app.get('/tickets/:id', isAuthenticated, async (req, res) => {
             <script>
                 const ticketId = ${ticket.id};
                 const replyForm = document.getElementById('replyForm');
-                const messageContainer = document.getElementById('messageContainer');
 
                 // Tag functionality
+                const tagColors = ${JSON.stringify(tagColors)};
+
                 document.querySelectorAll('.tag-btn').forEach(btn => {
+                    const tag = btn.dataset.tag;
+                    if (btn.classList.contains('active')) {
+                        btn.style.backgroundColor = \`\${tagColors[tag]}20\`;
+                        btn.style.color = tagColors[tag];
+                        btn.style.border = \`1px solid \${tagColors[tag]}40\`;
+                    } else {
+                        btn.style.backgroundColor = '#555';
+                        btn.style.color = '#888';
+                        btn.style.border = '1px solid #444';
+                    }
+
                     btn.addEventListener('click', async () => {
-                        const tag = btn.dataset.tag;
                         console.log('Tag clicked:', tag);
                         try {
                             const response = await fetch(\`/tickets/\${ticketId}/tags\`, {
@@ -321,6 +401,15 @@ app.get('/tickets/:id', isAuthenticated, async (req, res) => {
                             if (response.ok) {
                                 console.log('Tag toggled:', tag);
                                 btn.classList.toggle('active');
+                                if (btn.classList.contains('active')) {
+                                    btn.style.backgroundColor = \`\${tagColors[tag]}20\`;
+                                    btn.style.color = tagColors[tag];
+                                    btn.style.border = \`1px solid \${tagColors[tag]}40\`;
+                                } else {
+                                    btn.style.backgroundColor = '#555';
+                                    btn.style.color = '#888';
+                                    btn.style.border = '1px solid #444';
+                                }
                             } else {
                                 console.error('Failed to toggle tag:', tag);
                             }
@@ -330,7 +419,7 @@ app.get('/tickets/:id', isAuthenticated, async (req, res) => {
                     });
                 });
 
-                // Existing reply form handler
+                // Reply form handler
                 if (replyForm) {
                     replyForm.addEventListener('submit', async (e) => {
                         e.preventDefault();
@@ -467,8 +556,8 @@ app.post('/tickets/:id/tags', isAuthenticated, async (req, res) => {
     try {
         const { tag } = req.body;
         const ticketId = req.params.id;
-        await TicketTags.addTags(ticketId, [tag]);
-        console.log('Tag added to ticket:', ticketId, 'Tag:', tag);
+        await TicketTags.toggleTag(ticketId, tag);
+        console.log('Tag toggled for ticket:', ticketId, 'Tag:', tag);
         res.json({ success: true });
     } catch (error) {
         console.error('Error updating tags:', error);
