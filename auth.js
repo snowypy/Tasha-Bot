@@ -1,6 +1,6 @@
 // auth.js
 import passport from 'passport';
-const DiscordStrategy = require('passport-discord').Strategy;
+import { Strategy as DiscordStrategy } from 'passport-discord';
 import config from './config.js';
 
 passport.use(new DiscordStrategy({
