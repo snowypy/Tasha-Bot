@@ -39,7 +39,7 @@ db.run(`
     ON ticket_messages(ticket_id)
 `);
 
-class TicketThread {
+export class TicketThread {
     static async create(client, user, category) {
         const ticketChannel = client.channels.cache.get(config.ticketChannelId);
         const thread = await ticketChannel.threads.create({
@@ -220,5 +220,3 @@ class TicketThread {
         return date.toLocaleString();
     }
 }
-
-module.exports = { TicketThread };
