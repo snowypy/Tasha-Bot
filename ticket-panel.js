@@ -3,6 +3,7 @@ import express from 'express';
 import session from 'express-session';
 import passport from 'passport';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { Client, GatewayIntentBits } from 'discord.js';
 import config from './config.js';
 import { TicketThread } from './ticket-thread.js';
