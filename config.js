@@ -1,4 +1,4 @@
-module.exports = {
+export default = {
     discordToken: 'your-discord-bot-token',
     discord: {
         clientId: 'your-client-id',
