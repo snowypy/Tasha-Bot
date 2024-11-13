@@ -1,5 +1,5 @@
 // auth.js
-const passport = require('passport');
+import passport from 'passport';
 const DiscordStrategy = require('passport-discord').Strategy;
 import config from './config.js';
 
