@@ -23,6 +23,7 @@ db.serialize(() => {
             ticket_id INTEGER,
             user_id TEXT NOT NULL,
             username TEXT NOT NULL,
+            avatar_url TEXT NOT NULL,
             content TEXT NOT NULL,
             timestamp TEXT NOT NULL,
             is_staff BOOLEAN,
