@@ -1,4 +1,3 @@
-// public/js/main.js
 async function closeTicket(id) {
     console.log('Initiating close ticket for ID:', id);
     if (confirm('Are you sure you want to close this ticket?')) {

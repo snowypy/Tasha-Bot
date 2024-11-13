@@ -1,4 +1,3 @@
-// auth.js
 import passport from 'passport';
 import { Strategy as DiscordStrategy } from 'passport-discord';
 import config from './config.js';
@@ -7,7 +6,7 @@ passport.use(new DiscordStrategy({
     clientID: config.discord.clientId,
     clientSecret: config.discord.clientSecret,
     callbackURL: config.discord.callbackURL,
-    scope: ['identify', 'guilds', 'guilds.members.read'] // Added required scopes
+    scope: ['identify', 'guilds', 'guilds.members.read']
 }, async (accessToken, refreshToken, profile, done) => {
     try {
         console.log('Auth debug - Profile:', {
@@ -16,7 +15,6 @@ passport.use(new DiscordStrategy({
             guilds: profile.guilds?.map(g => g.id)
         });
 
-        // Find guild in user's guilds
         const guild = profile.guilds?.find(g => g.id === config.discord.guildId);
         
         if (!guild) {
@@ -25,7 +23,6 @@ passport.use(new DiscordStrategy({
             return done(null, false);
         }
 
-        // Check for staff role - bitwise check for ADMINISTRATOR or specified role
         const hasAdmin = (BigInt(guild.permissions) & BigInt(0x8)) !== BigInt(0);
         
         console.log('Auth debug - Permissions:', {

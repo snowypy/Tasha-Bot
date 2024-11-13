@@ -1,4 +1,3 @@
-// tasha.js
 import { Client, GatewayIntentBits, ActionRowBuilder, StringSelectMenuBuilder, InteractionType } from 'discord.js';
 import { TicketThread } from './ticket-thread.js';
 import { TicketTags } from './ticket-tags.js';

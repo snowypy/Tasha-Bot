@@ -1,16 +1,13 @@
-// ticket-tags.js
 import db from './database.js';
 import config from './config.js';
 
 export class TicketTags {
     static async addTags(ticketId, tags) {
-        // Filter to only valid tags
         const validTags = tags.filter(tag => 
             config.ticketTags.some(t => t.name === tag)
         );
         
         return new Promise((resolve, reject) => {
-            // Create ticket_tags table if it doesn't exist
             db.run(`
                 CREATE TABLE IF NOT EXISTS ticket_tags (
                     ticket_id INTEGER,
@@ -24,7 +21,6 @@ export class TicketTags {
                     return;
                 }
                 
-                // Insert new tag
                 const stmt = db.prepare(
                     'INSERT OR REPLACE INTO ticket_tags (ticket_id, tag_name) VALUES (?, ?)'
                 );

@@ -1,4 +1,3 @@
-// ticket-panel.js
 import express from 'express';
 import session from 'express-session';
 import passport from 'passport';
@@ -13,12 +12,10 @@ import './auth.js';
 
 const app = express();
 
-// Determine if the app is running in production
 const isProduction = process.env.NODE_ENV === 'production';
 
 
 
-// Trust the first proxy if behind one (e.g., Heroku, Nginx)
 if (isProduction) {
     app.set('trust proxy', 1);
 }
@@ -33,25 +30,23 @@ const client = new Client({
 
 client.login(config.discordToken);
 
-// Middleware setup
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 app.use(session({
-    secret: 'your-secure-session-secret', // Replace with a strong secret in production
+    secret: 'your-secure-session-secret',
     resave: false,
     saveUninitialized: false,
     cookie: { 
-        secure: isProduction, // Ensures the browser only sends the cookie over HTTPS
-        maxAge: 24 * 60 * 60 * 1000 // 1 day
+        secure: isProduction,
+        maxAge: 24 * 60 * 60 * 1000
     }
 }));
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Passport serialization
 passport.serializeUser((user, done) => {
     console.log('Serializing user:', user);
     done(null, user);
@@ -63,7 +58,6 @@ passport.deserializeUser((obj, done) => {
 });
 
 
-// Render template function
 const renderTemplate = (content, title = 'Tasha Ticket Panel', user = null) => `
 <!DOCTYPE html>
 <html lang="en" class="dark">
@@ -123,12 +117,10 @@ const renderTemplate = (content, title = 'Tasha Ticket Panel', user = null) => `
 </html>
 `;
 
-// Format date function
 const formatDate = (dateStr) => {
     return new Date(dateStr).toLocaleString();
 };
 
-// Auth routes
 app.get('/auth/discord', (req, res, next) => {
     console.log('Initiating Discord authentication');
     passport.authenticate('discord')(req, res, next);
@@ -155,7 +147,6 @@ app.get('/logout', (req, res) => {
     });
 });
 
-// Protected routes
 app.get('/', isAuthenticated, (req, res) => {
     console.log('Accessing dashboard for user:', req.user);
     const content = `
@@ -205,7 +196,6 @@ app.get('/tickets', isAuthenticated, async (req, res) => {
             statusTitle = 'All Tickets';
         }
 
-        // Fetch tags for each ticket
         for (const ticket of tickets) {
             ticket.tags = await TicketTags.getTagsForTicket(ticket.id);
         }
@@ -345,7 +335,6 @@ app.get('/tickets/:id', isAuthenticated, async (req, res) => {
                 const ticketId = ${ticket.id};
                 const replyForm = document.getElementById('replyForm');
 
-                // Tag functionality
                 const tagColors = ${JSON.stringify(tagColors)};
 
                 document.querySelectorAll('.tag-btn').forEach(btn => {
@@ -389,7 +378,6 @@ app.get('/tickets/:id', isAuthenticated, async (req, res) => {
                     });
                 });
 
-                // Reply form handler
                 if (replyForm) {
                     replyForm.addEventListener('submit', async (e) => {
                         e.preventDefault();
