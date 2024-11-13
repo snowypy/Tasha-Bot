@@ -1,14 +1,14 @@
 // ticket-panel.js
-const express = require('express');
-const session = require('express-session');
-const passport = require('passport');
-const path = require('path');
-const { Client, GatewayIntentBits, ActionRowBuilder, StringSelectMenuBuilder, InteractionType } = require('discord.js');
-const config = require('./config.js');
-const { TicketThread } = require('./ticket-thread.js');
-const { TicketTags } = require('./ticket-tags.js');
-const { isAuthenticated } = require('./middleware/auth');
-require('./auth');
+import express from 'express';
+import session from 'express-session';
+import passport from 'passport';
+import path from 'path';
+import { Client, GatewayIntentBits } from 'discord.js';
+import config from './config.js';
+import { TicketThread } from './ticket-thread.js';
+import { TicketTags } from './ticket-tags.js';
+import { isAuthenticated } from './middleware/auth.js';
+import './auth.js';
 
 const app = express();
 
@@ -58,41 +58,6 @@ passport.deserializeUser((obj, done) => {
     done(null, obj);
 });
 
-// Inside <script> tag in ticket details page
-const tagColors = {
-    'Urgent': '#FF0000',
-    'Bug': '#FFA500',
-    // Add other tags and their colors
-};
-
-document.querySelectorAll('.tag-btn').forEach(btn => {
-    btn.addEventListener('click', async () => {
-        const tag = btn.dataset.tag;
-        try {
-            const response = await fetch(`/tickets/${ticketId}/tags`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ tag })
-            });
-            if (response.ok) {
-                btn.classList.toggle('active');
-                if (btn.classList.contains('active')) {
-                    btn.style.backgroundColor = `${tagColors[tag]}20`;
-                    btn.style.color = `${tagColors[tag]}`;
-                    btn.style.border = `1px solid ${tagColors[tag]}40`;
-                } else {
-                    btn.style.backgroundColor = '#555';
-                    btn.style.color = '#888';
-                    btn.style.border = '1px solid #444';
-                }
-            } else {
-                console.error('Failed to toggle tag:', tag);
-            }
-        } catch (error) {
-            console.error('Error toggling tag:', error);
-        }
-    });
-});
 
 // Render template function
 const renderTemplate = (content, title = 'Tasha Ticket Panel', user = null) => `
@@ -103,6 +68,7 @@ const renderTemplate = (content, title = 'Tasha Ticket Panel', user = null) => `
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${title}</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/js/ticket-tags.js"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
