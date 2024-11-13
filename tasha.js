@@ -1,9 +1,9 @@
 // tasha.js
-const { Client, GatewayIntentBits, ActionRowBuilder, StringSelectMenuBuilder, InteractionType } = require('discord.js');
-const { TicketThread } = require('./ticket-thread.js');
-const { TicketTags } = require('./ticket-tags.js');
-const config = require('./config.js');
-const db = require('./database.js');
+import { Client, GatewayIntentBits, ActionRowBuilder, StringSelectMenuBuilder, InteractionType } from 'discord.js';
+import { TicketThread } from './ticket-thread.js';
+import { TicketTags } from './ticket-tags.js';
+import config from './config.js';
+import db from './database.js';
 
 const client = new Client({ intents: [
     GatewayIntentBits.Guilds,
