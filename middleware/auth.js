@@ -1,4 +1,4 @@
-const isAuthenticated = (req, res, next) => {
+export const isAuthenticated = (req, res, next) => {
     if (req.isAuthenticated() && req.user.isStaff) {
         return next();
     }
@@ -6,5 +6,3 @@ const isAuthenticated = (req, res, next) => {
     req.session.destroy();
     res.redirect('/auth/discord');
 };
-
-module.exports = { isAuthenticated };
