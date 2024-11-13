@@ -1,8 +1,8 @@
 // ticket-tags.js
-const db = require('./database.js');
-const config = require('./config.js');
+import db from './database.js';
+import config from './config.js';
 
-class TicketTags {
+export class TicketTags {
     static async addTags(ticketId, tags) {
         // Filter to only valid tags
         const validTags = tags.filter(tag => 
@@ -59,5 +59,3 @@ class TicketTags {
         return config.ticketTags;
     }
 }
-
-module.exports = { TicketTags };
