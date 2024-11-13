@@ -1,4 +1,4 @@
-export default = {
+const config = {
     discordToken: 'your-discord-bot-token',
     discord: {
         clientId: 'your-client-id',
@@ -20,3 +20,5 @@ export default = {
         { name: 'feature-request', color: '#ffff00' }
     ]
 };
+
+export default config;
