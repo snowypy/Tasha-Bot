@@ -2,6 +2,7 @@
     "name": "tasha",
     "version": "1.0.0",
     "description": "Advanced Discord ticket system",
+    "type": "module",
     "main": "tasha",
     "scripts": {
         "start": "node tasha",
