@@ -1,7 +1,7 @@
 // auth.js
 const passport = require('passport');
 const DiscordStrategy = require('passport-discord').Strategy;
-const config = require('./config.js');
+import config from './config.js';
 
 passport.use(new DiscordStrategy({
     clientID: config.discord.clientId,
