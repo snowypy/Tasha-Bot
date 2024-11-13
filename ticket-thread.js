@@ -1,8 +1,11 @@
 import { TextChannel, ThreadChannel } from 'discord.js';
-const { TicketTags } = require('./ticket-tags.js');
-const config = require('./config.js');
-const sqlite3 = require('sqlite3').verbose();
-const db = require('./database.js');
+import { TicketTags } from './ticket-tags.js';
+import config from './config.js';
+import sqlite3 from 'sqlite3';
+import db from './database.js';
+
+
+sqlite3.verbose();
 
 db.serialize(() => {
     db.run(`
