@@ -1,6 +1,6 @@
 // ticket-tags.js
-const db = require('./database.js');
-const config = require('./config.js');
+import db from './database.js';
+import config from './config.js';
 
 export class TicketTags {
     static async addTags(ticketId, tags) {
