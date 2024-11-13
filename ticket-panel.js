@@ -4,7 +4,7 @@ import session from 'express-session';
 import passport from 'passport';
 import path from 'path';
 import { Client, GatewayIntentBits } from 'discord.js';
-const config = require('./config.js');
+import config from './config.js';
 import { TicketThread } from './ticket-thread.js';
 import { TicketTags } from './ticket-tags.js';
 import { isAuthenticated } from './middleware/auth.js';
