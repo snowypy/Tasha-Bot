@@ -3,6 +3,7 @@ import { TicketThread } from './ticket-thread.js';
 import { TicketTags } from './ticket-tags.js';
 import config from './config.js';
 import db from './database.js';
+import { spawn } from 'child_process';
 
 const client = new Client({ intents: [
     GatewayIntentBits.Guilds,
@@ -30,16 +31,16 @@ client.on('ready', () => {
             content: 'Click below to create a new ticket',
             components: [row]
         });
-
-        client.on('interactionCreate', async (interaction) => {
-            if (interaction.type === InteractionType.MessageComponent && interaction.customId === 'create-ticket') {
-                const categoryId = interaction.values[0];
-                const category = config.ticketCategories.find(c => c.id === categoryId);
-                await TicketThread.create(client, interaction.user, category);
-            }
-        });
     } else {
         console.error('Ticket channel not found or is not a text-based channel.');
+    }
+});
+
+client.on('interactionCreate', async (interaction) => {
+    if (interaction.type === InteractionType.MessageComponent && interaction.customId === 'create-ticket') {
+        const categoryId = interaction.values[0];
+        const category = config.ticketCategories.find(c => c.id === categoryId);
+        await TicketThread.create(client, interaction.user, category);
     }
 });
 
@@ -50,7 +51,6 @@ client.on('messageCreate', async (message) => {
         message.channel.parentId === config.ticketChannelId) {
         
         try {
-            
             const ticket = await new Promise((resolve, reject) => {
                 db.get(
                     'SELECT id FROM tickets WHERE discord_user_id = ? ORDER BY created_at DESC LIMIT 1', 
@@ -64,7 +64,6 @@ client.on('messageCreate', async (message) => {
 
             if (ticket) {
                 const avatarUrl = message.author.displayAvatarURL({ format: 'png' });
-
                 await TicketThread.addMessage(
                     ticket.id,
                     message.author.id,
@@ -81,3 +80,11 @@ client.on('messageCreate', async (message) => {
 });
 
 client.login(config.discordToken);
+
+const ticketPanelProcess = spawn('node', ['ticket-panel.js'], {
+    stdio: 'inherit'
+});
+
+ticketPanelProcess.on('close', (code) => {
+    console.log(`ticket-panel.js process exited with code ${code}`);
+});
