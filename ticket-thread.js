@@ -1,4 +1,4 @@
-const { TextChannel, ThreadChannel } = require('discord.js');
+import { TextChannel, ThreadChannel } from 'discord.js';
 const { TicketTags } = require('./ticket-tags.js');
 const config = require('./config.js');
 const sqlite3 = require('sqlite3').verbose();
